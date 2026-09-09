@@ -20,12 +20,17 @@ README.md    # this file
 
 ## Submissions
 
-| Submission | Model / setting | Problems | Config | Source |
+| Submission | Model | Problems | Budget | Source |
 | --- | --- | --- | --- | --- |
-| `imo2026-deploy-budget-high-tournament` | Proof Pilot (high budget) | 1-6 | deploy, high budget | [submission.csv](raw/imo2026-deploy-budget-high-tournament_submission.csv) |
-| `imo2026-step225-budget-high-tournament` | IMO step225 (high budget) | 1-6 | step225, high budget | [submission.csv](raw/imo2026-step225-budget-high-tournament_submission.csv) |
-| `step225_run2` | IMO step225 (xhigh budget, rerun) | 1, 4, 5 | step225, xhigh budget | [submission.csv](raw/step225_run2_submission.csv) |
-| `step225_run3` | IMO step225 (xhigh budget, rerun) | 5 | step225, xhigh budget | [submission.csv](raw/step225_run3_submission.csv) |
+| `imo2026-deploy-budget-high-tournament` | FM-Pochi-32B-ProofPilot (deploy) | 1-6 | high | [submission.csv](raw/imo2026-deploy-budget-high-tournament_submission.csv) |
+| `imo2026-step225-budget-high-tournament` | FM-Pochi-32B-IMO26 (step225) | 1-6 | high | [submission.csv](raw/imo2026-step225-budget-high-tournament_submission.csv) |
+| `step225_run2` (rerun) | FM-Pochi-32B-IMO26 (step225) | 1, 4, 5 | xhigh | [submission.csv](raw/step225_run2_submission.csv) |
+| `step225_run3` (rerun) | FM-Pochi-32B-IMO26 (step225) | 5 | xhigh | [submission.csv](raw/step225_run3_submission.csv) |
+
+Both are checkpoints of the same 32B proof model, run through the same
+generate–verify–refine harness — see [Models](../README.md#models). The budget
+column names a [production preset](../README.md#production-configs): the runs
+above used `config-model-{deploy,step225}-budget-{high,xhigh}.yaml`.
 
 ## Grading methodology
 
@@ -62,13 +67,13 @@ Whether a solution is complete and correct is a reasonably objective question,
 so that's what we've marked on: 7 for a complete solution, 0 otherwise. Without
 the markschemes, any intermediate mark is guesswork.
 
-The exception is the 5 awarded to Proof Pilot on P5. We've kept it because it
-doesn't affect the medal colour either way, and because there's some evidence
-it's the mark that would actually have been awarded: 75 of the 666 contestants
-scored exactly 5 on P5 (against only 26 at 3 and 14 at 4), which looks like a
-standard deduction landing at 5 rather than graders spreading marks evenly, and
-some anecdotal discussions we've had point the same way. The uncertainty is
-flagged in the footnote below and in `scores.csv`.
+The exception is the 5 awarded to FM-Pochi-32B-ProofPilot (deploy) on P5. We've
+kept it because it doesn't affect the medal colour either way, and because
+there's some evidence it's the mark that would actually have been awarded: 75 of
+the 666 contestants scored exactly 5 on P5 (against only 26 at 3 and 14 at 4),
+which looks like a standard deduction landing at 5 rather than graders spreading
+marks evenly, and some anecdotal discussions we've had point the same way. The
+uncertainty is flagged in the footnote below and in `scores.csv`.
 
 For reference, the full IMO 2026 score distribution (from
 [imo-official.org](https://www.imo-official.org/results/individual/year/2026/),
@@ -120,61 +125,66 @@ of marks that would be zeros at the actual IMO.
 
 ## Scores
 
-We evaluated `Proof Pilot (high budget)` and `IMO step225 (high budget)` on the
-full set of problems. There were lots of technical details in P2, P3 and P6 on
-which the models could fail, which made it unlikely that an LLM could make
-sufficient progress on a further run, so we skipped them in the reruns.
+We evaluated **FM-Pochi-32B-ProofPilot (deploy)** and **FM-Pochi-32B-IMO26
+(step225)**, both at the high budget, on the full set of problems. There were
+lots of technical details in P2, P3 and P6 on which the models could fail, which
+made it unlikely that an LLM could make sufficient progress on a further run, so
+we skipped them in the reruns.
 
-| Model | P1 | P2 | P3 | P4 | P5 | P6 | Total |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Proof Pilot (high) | 7 | 0 | 0 | 7 | 5\* | 0† | **19** |
-| IMO step225 (high) | 7 | 0 | 0 | 7 | 7 | 0† | **21** |
-| `step225_run2` | 7 | - | - | 7 | 7 | - | **21** |
+| Model | Budget | P1 | P2 | P3 | P4 | P5 | P6 | Total |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| FM-Pochi-32B-ProofPilot (deploy) | high | 7 | 0 | 0 | 7 | 5\* | 0† | **19** |
+| FM-Pochi-32B-IMO26 (step225) | high | 7 | 0 | 0 | 7 | 7 | 0† | **21** |
+| FM-Pochi-32B-IMO26 (step225), `step225_run2` | xhigh | 7 | - | - | 7 | 7 | - | **21** |
 
 Additionally, we re-evaluated `step225_run3` a third time on problem P5, on
 which it scored 7.
 
-\* **P5, Proof Pilot** - defaulted to 5 in the total. Without access to the
-official markscheme this score is uncertain: it could reasonably be as low as 2,
-though it is very unlikely to be lower given the score distribution on the
-actual IMO. Even at 2, the total (16) would still be a Bronze-medal score.
+\* **P5, FM-Pochi-32B-ProofPilot (deploy)** - defaulted to 5 in the total.
+Without access to the official markscheme this score is uncertain: it could
+reasonably be as low as 2, though it is very unlikely to be lower given the
+score distribution on the actual IMO. Even at 2, the total (16) would still be a
+Bronze-medal score.
 
-† **P6** - both `Proof Pilot (high)` and `IMO step225 (high budget)` submissions
-are probable 0s, but each contains some useful work, so there is a small chance
-either could score 1.
+† **P6** - both the FM-Pochi-32B-ProofPilot (deploy) and FM-Pochi-32B-IMO26
+(step225) submissions are probable 0s, but each contains some useful work, so
+there is a small chance either could score 1.
 
-Plausible ranges: Proof Pilot 16-20, IMO step225 21-22. Both reach a
-Bronze-medal score, with IMO step225 close to (but not reaching) Silver.
+Plausible ranges: FM-Pochi-32B-ProofPilot (deploy) 16-20, FM-Pochi-32B-IMO26
+(step225) 21-22. Both reach a Bronze-medal score, with FM-Pochi-32B-IMO26
+(step225) close to (but not reaching) Silver.
 
 ## Per-problem commentary
 
-We analyse the `Proof Pilot (high budget)` and `IMO step225 (high budget)`
-models.
+We analyse **FM-Pochi-32B-ProofPilot (deploy)** and **FM-Pochi-32B-IMO26
+(step225)**, both at the high budget.
 
 - **P1** - Both main submissions are complete solutions: 7 each.
-- **P2** - Both score 0. Proof Pilot mis-converts one of the angle relations
-  into complex numbers at the outset. IMO step225 is correct for longer, but the
-  algebra simplifying \(BC - AD = 0\) is invalid. Computational approaches to
-  geometry problems are very rarely awarded partial credit unless the
-  intermediate results are interpreted synthetically (i.e. back in terms of the
-  diagram rather than pure algebra), so both would certainly score 0.
-- **P3** - Both score 0. Neither submission goes beyond the \(n = 1\) case;
-  both give the wrong answer, with no progress towards the optimal bound. The
+- **P2** - Both score 0. FM-Pochi-32B-ProofPilot (deploy) mis-converts one of
+  the angle relations into complex numbers at the outset. FM-Pochi-32B-IMO26
+  (step225) is correct for longer, but the algebra simplifying \(BC - AD = 0\)
+  is invalid. Computational approaches to geometry problems are very rarely
+  awarded partial credit unless the intermediate results are interpreted
+  synthetically (i.e. back in terms of the diagram rather than pure algebra), so
+  both would certainly score 0.
+- **P3** - Both score 0. Neither submission goes beyond the \(n = 1\) case; both
+  give the wrong answer, with no progress towards the optimal bound. The
   \(n = 1\) case is not credit-worthy at the IMO on a hard problem.
-- **P4** - Both are complete solutions: 7 each. The IMO step225 write-up is
-  hard to follow in places, but the IMO applies no style penalties or negative
-  marking.
-- **P5** - The IMO step225 solution is complete: 7. The Proof Pilot solution
-  fails to handle the possibility \(f(x) - x \in \{0, c\}\) for some constant
-  \(c \ge 0\), and its Case 1 argument is incorrect (the claimed inequality
-  fails, e.g., for \(a = 10\), \(b = 2\), \(c = 1\)). Without the official
-  markscheme the penalty for this is uncertain: the score would very likely be
-  in the range 2-5, with 5 the most likely.
+- **P4** - Both are complete solutions: 7 each. The FM-Pochi-32B-IMO26 (step225)
+  write-up is hard to follow in places, but the IMO applies no style penalties
+  or negative marking.
+- **P5** - The FM-Pochi-32B-IMO26 (step225) solution is complete: 7. The
+  FM-Pochi-32B-ProofPilot (deploy) solution fails to handle the possibility
+  \(f(x) - x \in \{0, c\}\) for some constant \(c \ge 0\), and its Case 1
+  argument is incorrect (the claimed inequality fails, e.g., for \(a = 10\),
+  \(b = 2\), \(c = 1\)). Without the official markscheme the penalty for this is
+  uncertain: the score would very likely be in the range 2-5, with 5 the most
+  likely.
 - **P6** - Both submissions contain fundamental errors and are incomplete,
-  though each has some useful ideas (particularly IMO step225). The bar for a
-  partial mark on a hard problem is usually reasonably high, but 73 contestants
-  earned one this year, so there is a small chance of a 1. The most likely mark
-  for both is 0.
+  though each has some useful ideas — particularly FM-Pochi-32B-IMO26 (step225).
+  The bar for a partial mark on a hard problem is usually reasonably high, but
+  73 contestants earned one this year, so there is a small chance of a 1. The
+  most likely mark for both is 0.
 - **xhigh reruns** - `step225_run2` (P1, P4, P5) and `step225_run3` (P5) were
   also reviewed: all are complete solutions, 7 each.
 

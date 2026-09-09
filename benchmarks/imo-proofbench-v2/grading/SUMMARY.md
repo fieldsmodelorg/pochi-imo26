@@ -1,4 +1,4 @@
-# IMO-ProofBench-V2 — step225 (medium budget)
+# IMO-ProofBench-V2 — FM-Pochi-32B-IMO26 (step225), medium budget
 
 Grader: **GPT-5.6-sol**, reasoning **high**, **4 graders/problem**, arithmetic mean. Scale 0-7. Graded against ProofBench reference solutions + grading guidelines.
 

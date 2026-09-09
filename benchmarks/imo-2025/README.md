@@ -1,11 +1,13 @@
-# IMO 2025 — step225 model (high budget)
+# IMO 2025 — FM-Pochi-32B-IMO26 (step225), high budget
 
-Evaluation of the **step225** model (Olmo-3.1-32B OPD) on the six **IMO 2025**
+Evaluation of **FM-Pochi-32B-IMO26 (step225)** — a proof model trained from
+`Olmo-3.1-32B-Think`; see [Models](../../README.md#models) — on the six **IMO 2025**
 problems, each graded 0–7. The provided proofs are one rollout per problem at the
 **high** inference budget of the generate–verify–refine harness.
 
-Inference was run with the **step225 high** production config
-([`config-model-step225-budget-high.yaml`](../../config-model-step225-budget-high.yaml)).
+Inference was run with the **high**-budget production config
+[`config-model-step225-budget-high.yaml`](../../config-model-step225-budget-high.yaml)
+— `step225` is this checkpoint's token in the preset filenames.
 
 ## Headline
 

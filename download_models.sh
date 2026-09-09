@@ -17,9 +17,9 @@ WHICH="${1:-all}"
 MODELS_DIR="${2:-/workspace/models}"
 
 # Pinned, public source repos + revisions (immutable for reproducibility).
-PROOFPILOT_REPO="fieldsmodelorg/Olmo-3.1-32B-Think-OPD-ProofPilot"   # deploy + draft
+PROOFPILOT_REPO="fieldsmodelorg/FM-Pochi-32B-ProofPilot"  # deploy + draft
 PROOFPILOT_REV="87707b8030800b1e531b78c9823cb80a63d66e5e"
-IMO_REPO="fieldsmodelorg/Olmo-3.1-32B-Think-OPD-IMO"                 # step checkpoints
+IMO_REPO="fieldsmodelorg/FM-Pochi-32B-IMO26"              # step checkpoints
 IMO_REV="f14030d3c65e1ed59e4e70477297053fc9a75151"
 DRAFT="dflash-32b-draft-v2test-phaseL"
 

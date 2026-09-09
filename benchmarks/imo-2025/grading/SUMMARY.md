@@ -1,4 +1,4 @@
-# IMO 2025 — step225 model (high budget)
+# IMO 2025 — FM-Pochi-32B-IMO26 (step225), high budget
 
 Grader: **GPT-5.6-sol** (xhigh reasoning, 1 grader/problem), using the
 [MathArena](https://matharena.ai) `imo_2025` **checkpoint markschemes** (embedded in

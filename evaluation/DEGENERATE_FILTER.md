@@ -16,8 +16,8 @@ generation from crashing the server. All three are per-config switchable.
 
 ## 1. Why this exists — the crash
 
-A checkpoint run (`step-225`) **crashed mid-P6**: the SGLang server SIGQUIT'd
-itself (exit -3). Root cause from the node's server log:
+A run of the FM-Pochi-32B-IMO26 (step225) checkpoint **crashed mid-P6**: the
+SGLang server SIGQUIT'd itself (exit -3). Root cause from the node's server log:
 
 - A **verifier generation ran away to 131,484 tokens over ~880 s** in a degenerate
   enumeration loop (`… gcd(594,102)=6, gcd(594,105)=3, gcd(594,108)=54, …` for
@@ -187,8 +187,9 @@ original streaming `feed()` + selection-time `degenerate()`). Tests:
 ## 9. Measured stats — scale & false-positive check
 
 Detector replayed over **all 29,455 model outputs** from the three IMO-2026 runs
-(`deploy`, `step-225`, `step-125`). These are *measurements on real production
-output*, not synthetic.
+— FM-Pochi-32B-ProofPilot (deploy), FM-Pochi-32B-IMO26 (step225), and an
+earlier step-125 checkpoint from the same training run (not published). These
+are *measurements on real production output*, not synthetic.
 
 **Overall:** **244 / 29,455 flagged degenerate (0.83 %)**.
 
