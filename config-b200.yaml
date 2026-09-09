@@ -1,0 +1,78 @@
+# B200/SM100: xhigh search budget, full context, BF16 target and KV, no DFlash.
+# Requires the Docker CUTLASS CUDA-13 installation repair. For an older image,
+# use attention_backend: triton and page_size: 1 instead.
+# TP2 with DP auto gives TP2/DP1 on two GPUs and TP2/DP4 on eight GPUs.
+schema_version: 12
+
+models:
+  bf16_target: /workspace/models/opd-32b-bf16-step-225
+  quantized_target: /workspace/models/opd-32b-v33-s200-gptq-w4a16
+  bf16_draft: /workspace/models/dflash-32b-draft-v2test-phaseL
+  quantized_draft: /workspace/models/dflash-32b-draft-v2test-phaseL-int4mlp
+
+model:
+  tensor_parallel_size: 2
+  data_parallel_size: auto
+  quantized: false
+  dflash: false
+  kv_cache_dtype: auto
+
+server:
+  attention_backend: fa4
+  page_size: 128
+  deterministic_inference: false
+  host: 127.0.0.1
+  port: 30000
+  context_length: 262144
+  mem_fraction_static: 0.82
+  max_running_requests: 64
+  swa_full_tokens_ratio: 0.2
+  chunked_prefill_size: 2048
+  stream_interval: 16
+  watchdog_timeout: 1200
+  prefill_cuda_graph_backend: tc_piecewise
+  dflash_block_size: 8
+  dflash_num_draft_tokens: 8
+  dflash_window_size: 512
+
+search:
+  proofs_per_round: 128
+  verifications_per_proof: 64
+  top_proofs: 32
+  refine_parents: 4
+  reviews_per_refine_parent: 3
+  refine_review_strategy: random_nonideal
+  max_rounds: 8
+  early_stop_threshold: 0.99999
+  temperature: 1.0
+  top_p: 0.95
+  max_completion_tokens: 128000
+  solution_continuation_tokens: 16384
+  verifier_continuation_tokens: 16384
+  min_valid_verifications: 4
+  verifier_sees_self_evaluation: true
+  refiner_sees_self_evaluation: false
+  lenient_parsing: true
+  filter_degenerate: true
+  stream_detect: true
+  request_timeout_seconds: 86400
+  concurrency: 96
+  seed: 0
+  llm_selector: true
+  selection_votes: 16
+  selection_candidates: 4
+  selection_max_tokens: 56000
+  selection_continuation_tokens: 2048
+  selection_tournament: true
+  selection_tournament_threshold: 0.95
+  selection_tournament_rounds: 64
+  selection_tournament_max_candidates: 10
+  selection_score_window: 0.2
+
+traces:
+  enabled: false
+  dataset_repo: ""
+  secrets_file: ""
+  interval_seconds: 600
+  private: true
+  run_name: imo2026-step225-budget-xhigh-b200

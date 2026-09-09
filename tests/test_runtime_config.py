@@ -28,6 +28,22 @@ class RuntimeConfigTests(unittest.TestCase):
     def test_root_config_is_valid(self):
         self.assertIsInstance(self.config, dict)
 
+    def test_b200_profile_preserves_production_limits(self):
+        config = load_config(REPO / "config-b200.yaml")
+        production = load_config(REPO / "config-model-step225-budget-xhigh.yaml")
+        self.assertEqual(config["search"], production["search"])
+        expected_server = dict(production["server"], attention_backend="fa4", page_size=128)
+        self.assertEqual(config["server"], expected_server)
+        self.assertFalse(config["model"]["dflash"])
+        self.assertFalse(config["model"]["quantized"])
+        self.assertEqual(config["model"]["kv_cache_dtype"], "auto")
+        for gpus, expected_dp in (("2", 1), ("8", 4)):
+            with self.subTest(gpus=gpus), mock.patch.dict(os.environ, {"PP_GPU_COUNT": gpus}):
+                model = active_model(config)
+                self.assertEqual(model.tensor_parallel_size, 2)
+                self.assertEqual(model.data_parallel_size, expected_dp)
+                self.assertIsNone(model.draft)
+
     def write_config(self, directory, configure, name="config.yaml"):
         config = copy.deepcopy(self.config)
         configure(config)

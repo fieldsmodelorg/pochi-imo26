@@ -25,15 +25,23 @@ ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY --from=uv /uv /usr/local/bin/uv
 COPY evaluation/requirements.txt /tmp/requirements.txt
+COPY docker/validate_cutlass_install.py /tmp/validate_cutlass_install.py
 
 # /opt/pp comes prebuilt + relocated from the base image. Re-assert the pinned
 # PyPI deps so evaluation/requirements.txt stays authoritative, then verify the
 # runtime imports.
+# The base/CUDA-13 CUTLASS wheels overlap. Restore CUDA-13 last so Python
+# helpers and MLIR bindings come from one wheel (required by FA4 on B200).
 RUN set -Eeuo pipefail; \
     test -x /opt/pp/venv/bin/python; \
     test -x /opt/pp/pybase/bin/python3; \
     UV_LINK_MODE=copy /usr/local/bin/uv pip install \
         --python /opt/pp/venv/bin/python -r /tmp/requirements.txt; \
+    UV_LINK_MODE=copy /usr/local/bin/uv pip install \
+        --python /opt/pp/venv/bin/python --no-deps --reinstall \
+        nvidia-cutlass-dsl-libs-cu13==4.5.2; \
+    LD_LIBRARY_PATH=/opt/pp/pybase/lib /opt/pp/venv/bin/python \
+        /tmp/validate_cutlass_install.py; \
     touch "/opt/pp/.proof-pilot-deps-$(sha256sum /tmp/requirements.txt | awk '{print $1}')"; \
     LD_LIBRARY_PATH=/opt/pp/pybase/lib /opt/pp/venv/bin/python -c \
         "import sglang, torch, flash_attn; print('baked runtime:', sglang.__version__, torch.__version__)"
@@ -66,6 +74,7 @@ RUN apt-get update \
         libibverbs1 \
         libnuma1 \
         numactl \
+        ninja-build \
         pciutils \
         procps \
         python3 \
