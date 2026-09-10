@@ -1,11 +1,11 @@
-# AIMO Proof Pilot Inference
+# IMO26 eval of FM-Pochi-32B models
 
 This repository packages the generate-verify-refine proof harness as a Docker
 image. The submission path reads `test.csv`, runs the selected harness, and
 writes `submission.csv` without calling an external grader. The checked-in
 configuration uses eight H200 GPUs as four TP2 replicas, BF16 target and draft
-weights, DFlash speculative decoding, and FlashAttention 3. Inference has only
-been tested on H200.
+weights, DFlash speculative decoding, and FlashAttention 3. Inference has
+been tested on H200 and B200 (use appropriate config files).
 
 > ### 📦 Prebuilt image
 > **`ghcr.io/fieldsmodelorg/aimo-proof-pilot:sha-463682b`** &nbsp;·&nbsp; built from `main` [`463682b`](https://github.com/fieldsmodelorg/AIMO-Proof-Pilot/commit/463682bbf4137dac6366246ee7aefa1b0d0a4a68) &nbsp;·&nbsp; [package on GHCR](https://github.com/fieldsmodelorg/AIMO-Proof-Pilot/pkgs/container/aimo-proof-pilot)
