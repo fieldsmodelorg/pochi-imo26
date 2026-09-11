@@ -15,9 +15,9 @@ been tested on H200 and B200 (use appropriate config files).
 > Public, pullable with no login. Bakes the SGLang runtime + the committed IMO-2026
 > problem set; only model weights are downloaded at run time.
 
-## Quick start (8×H200)
+## Quick start (8×H200 or B200)
 
-You need an 8×H200 node with Docker and NVIDIA GPU access. The image is
+You need an 8×H200 (or 8XB200) node with Docker and NVIDIA GPU access. The image is
 self-contained — the SGLang runtime and every dependency are baked in; only the
 model weights are downloaded, into a folder you mount. No HuggingFace token is
 needed at any step.
@@ -67,6 +67,18 @@ from scratch:
 Finished problems are skipped and a partially-done problem resumes from its last
 completed round. (Running outside the container? Point `VENV` at the runtime venv,
 or `source` its `activate-env.sh` and set `PYTHON`; everything else is identical.)
+
+### B200 alternative
+
+In B200, follow the container and model-download
+steps above, then replace the inference command with:
+
+```bash
+./scheduler.sh config-b200.yaml /workspace/runs/step225-b200
+```
+
+[`config-b200.yaml`](config-b200.yaml) need uses **FA4 with DFlash
+disabled**.
 
 ### Models
 
