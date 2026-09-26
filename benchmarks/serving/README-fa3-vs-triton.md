@@ -48,10 +48,10 @@ The initial BF16 log contains a rejected client attempt to the wrong non-`/v1` r
 
 ## Scope
 
-These historical measurements use the earlier `opd-32b-deploy` checkpoint on two H200s with TP1/DP2. There is one timed 32-request batch per condition. All requests reached the 8,192-token ceiling; the measurements do not assess proof quality or end-to-end proof-search speed on the final eight-GPU deployment.
+These historical measurements, recorded on July 12, 2026, use the earlier `opd-32b-deploy` checkpoint on two H200s with TP1/DP2. There is one timed 32-request batch per condition. All requests reached the 8,192-token ceiling; the measurements do not assess proof quality or end-to-end proof-search speed on the final eight-GPU deployment.
 
 ## Artifacts
 
-- [FA3 versus Triton comparison](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/fa3-vs-triton-comparison.json).
-- Triton + DFlash: [summary](bf16-triton-dflash-dp2-c32-imo2025-p1-20260712/result.json), [per-request measurements](bf16-triton-dflash-dp2-c32-imo2025-p1-20260712/requests.json), [server log](bf16-triton-dflash-dp2-c32-imo2025-p1-20260712/server.log).
-- FA3 + DFlash: [summary](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/result.json), [per-request measurements](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/requests.json), [server log](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/server.log).
+- [FA3 versus Triton comparison](fa3-dflash/fa3-vs-triton-comparison.json).
+- Triton + DFlash: [summary](triton-dflash/result.json), [per-request measurements](triton-dflash/requests.json), [server log](triton-dflash/server.log).
+- FA3 + DFlash: [summary](fa3-dflash/result.json), [per-request measurements](fa3-dflash/requests.json), [server log](fa3-dflash/server.log).

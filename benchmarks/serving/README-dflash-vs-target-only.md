@@ -53,10 +53,10 @@ measured 2.05x gain.
 
 ## Scope
 
-These historical measurements use the earlier `opd-32b-deploy` checkpoint on two H200s with TP1/DP2. There is one timed 32-request batch per condition. The measurements do not assess proof quality or end-to-end proof-search speed on the final eight-GPU deployment.
+These historical measurements, recorded on July 12, 2026, use the earlier `opd-32b-deploy` checkpoint on two H200s with TP1/DP2. There is one timed 32-request batch per condition. The measurements do not assess proof quality or end-to-end proof-search speed on the final eight-GPU deployment.
 
 ## Artifacts
 
-- [DFlash versus target-only comparison](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/dflash-vs-target-only-comparison.json).
-- FA3 target-only: [summary](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/result.json), [per-request measurements](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/requests.json), [server log](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/server.log), [launch configuration](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/config.yaml).
-- FA3 + DFlash: [summary](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/result.json), [per-request measurements](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/requests.json), [server log](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/server.log).
+- [DFlash versus target-only comparison](fa3-target-only/dflash-vs-target-only-comparison.json).
+- FA3 target-only: [summary](fa3-target-only/result.json), [per-request measurements](fa3-target-only/requests.json), [server log](fa3-target-only/server.log), [launch configuration](fa3-target-only/config.yaml).
+- FA3 + DFlash: [summary](fa3-dflash/result.json), [per-request measurements](fa3-dflash/requests.json), [server log](fa3-dflash/server.log).

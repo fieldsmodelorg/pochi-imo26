@@ -35,9 +35,9 @@
     "draft_attention_backend": "fa3",
     "wall_elapsed_seconds": 91.78353975620121,
     "aggregate_completion_tokens_per_second": 2856.1112449608772,
-    "result_file": "../bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/result.json",
-    "requests_file": "../bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/requests.json",
-    "server_log": "../bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/server.log"
+    "result_file": "../fa3-dflash/result.json",
+    "requests_file": "../fa3-dflash/requests.json",
+    "server_log": "../fa3-dflash/server.log"
   },
   "dflash_over_target_only": {
     "throughput_ratio": 2.052436413841117,
