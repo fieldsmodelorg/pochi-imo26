@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "workload": {
+    "requests": 32,
+    "tokens_per_request": 8192,
+    "total_completion_tokens": 262144,
+    "tp": 1,
+    "dp": 2,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "prompt_tokens": 426
+  },
+  "results": {
+    "bf16_triton": {
+      "throughput_tok_s": 624.4905660317171,
+      "wall_s": 419.77255423692986,
+      "p50_s": 405.469,
+      "p95_s": 417.15020000000004
+    },
+    "bf16_fa3": {
+      "throughput_tok_s": 2856.1112449608772,
+      "wall_s": 91.78353975620121,
+      "p50_s": 81.5625,
+      "p95_s": 90.07014999999998,
+      "accept_log": {
+        "samples": 145,
+        "mean": 3.0818620689655174,
+        "min": 2.17,
+        "max": 3.57
+      }
+    }
+  },
+  "ratios": {
+    "bf16_fa3_over_triton": 4.573505830696278
+  },
+  "output_validation": {
+    "bf16_fa3_all_length_8192": true,
+    "bf16_fa3_final_content_nonempty": 0
+  }
+}
