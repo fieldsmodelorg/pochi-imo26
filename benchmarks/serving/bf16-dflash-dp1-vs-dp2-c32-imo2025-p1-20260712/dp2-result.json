@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "case": "bf16_dflash_tp1_dp2_c32_production_sampling",
+  "tp": 1,
+  "dp": 2,
+  "gpu_count": 2,
+  "request_count": 32,
+  "problem": "MathArena/imo_2025 problem 1",
+  "prompt_tokens": 426,
+  "max_completion_tokens_per_request": 8192,
+  "temperature": 1.0,
+  "top_p": 0.95,
+  "base_seed": 0,
+  "prefix_cache_flushed": true,
+  "benchmark_warmup_requests": 0,
+  "wall_elapsed_seconds": 419.77255423692986,
+  "total_completion_tokens": 262144,
+  "aggregate_completion_tokens_per_second": 624.4905660317171,
+  "completion_tokens": {
+    "min": 8192,
+    "median": 8192.0,
+    "max": 8192,
+    "mean": 8192
+  },
+  "latency_seconds": {
+    "min": 382.785,
+    "p50": 405.469,
+    "p95": 417.15020000000004,
+    "max": 419.632,
+    "mean": 402.75
+  },
+  "finish_reasons": {
+    "length": 32
+  },
+  "cached_prompt_tokens": {
+    "integer_values": [
+      425
+    ],
+    "none_count": 10
+  },
+  "requests_file": "dp2-requests.json"
+}

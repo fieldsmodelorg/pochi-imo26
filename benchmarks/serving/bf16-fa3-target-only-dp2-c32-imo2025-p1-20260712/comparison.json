@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "comparison": "bf16_fa3_target_only_vs_bf16_fa3_dflash",
+  "matched_contract": {
+    "target": "/workspace/models/opd-32b-deploy",
+    "target_precision": "bf16",
+    "attention_backend": "fa3",
+    "kv_cache_dtype": "bf16",
+    "tp": 1,
+    "dp": 2,
+    "gpu_count": 2,
+    "request_count": 32,
+    "prompt_tokens_per_request": 426,
+    "completion_tokens_per_request": 8192,
+    "total_completion_tokens": 262144,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "deterministic_inference": true,
+    "mem_fraction_static": 0.84,
+    "prefix_cache_flushed": true,
+    "benchmark_warmup_requests": 0
+  },
+  "target_only": {
+    "speculative_algorithm": null,
+    "wall_elapsed_seconds": 188.37987918686122,
+    "aggregate_completion_tokens_per_second": 1391.5711228372184,
+    "result_file": "result.json",
+    "requests_file": "requests.json",
+    "server_log": "server.log"
+  },
+  "dflash": {
+    "speculative_algorithm": "DFLASH",
+    "draft": "/workspace/models/dflash-32b-draft-v2test-phaseL",
+    "draft_precision": "bf16",
+    "draft_attention_backend": "fa3",
+    "wall_elapsed_seconds": 91.78353975620121,
+    "aggregate_completion_tokens_per_second": 2856.1112449608772,
+    "result_file": "../fa3-vs-triton-dp2-c32-imo2025-p1-20260712/bf16-fa3-result.json",
+    "requests_file": "../fa3-vs-triton-dp2-c32-imo2025-p1-20260712/bf16-fa3-requests.json",
+    "server_log": "../fa3-vs-triton-dp2-c32-imo2025-p1-20260712/bf16-fa3-server.log"
+  },
+  "dflash_over_target_only": {
+    "throughput_ratio": 2.052436413841117,
+    "throughput_increase_percent": 105.2436413841117,
+    "wall_time_reduction_ratio": 0.5127741871776146,
+    "wall_time_reduction_percent": 51.27741871776146,
+    "wall_time_saved_seconds": 96.59633943066001
+  },
+  "validity": {
+    "target_only_requests_completed": 32,
+    "target_only_requests_at_token_ceiling": 32,
+    "target_only_finish_reasons": {
+      "length": 32
+    },
+    "target_only_reasoning_nonempty": 32,
+    "target_only_final_content_nonempty": 0,
+    "target_only_runtime_errors": 0,
+    "target_only_cuda_oom_errors": 0,
+    "target_only_nan_reports": 0
+  }
+}
