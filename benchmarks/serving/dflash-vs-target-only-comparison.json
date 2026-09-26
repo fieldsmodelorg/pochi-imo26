@@ -24,9 +24,9 @@
     "speculative_algorithm": null,
     "wall_elapsed_seconds": 188.37987918686122,
     "aggregate_completion_tokens_per_second": 1391.5711228372184,
-    "result_file": "result.json",
-    "requests_file": "requests.json",
-    "server_log": "server.log"
+    "result_file": "fa3-target-only/result.json",
+    "requests_file": "fa3-target-only/requests.json",
+    "server_log": "fa3-target-only/server.log"
   },
   "dflash": {
     "speculative_algorithm": "DFLASH",
@@ -35,9 +35,9 @@
     "draft_attention_backend": "fa3",
     "wall_elapsed_seconds": 91.78353975620121,
     "aggregate_completion_tokens_per_second": 2856.1112449608772,
-    "result_file": "../fa3-dflash/result.json",
-    "requests_file": "../fa3-dflash/requests.json",
-    "server_log": "../fa3-dflash/server.log"
+    "result_file": "fa3-dflash/result.json",
+    "requests_file": "fa3-dflash/requests.json",
+    "server_log": "fa3-dflash/server.log"
   },
   "dflash_over_target_only": {
     "throughput_ratio": 2.052436413841117,

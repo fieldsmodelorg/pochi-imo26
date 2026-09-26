@@ -52,6 +52,6 @@ These historical measurements, recorded on July 12, 2026, use the earlier `opd-3
 
 ## Artifacts
 
-- [FA3 versus Triton comparison](fa3-dflash/fa3-vs-triton-comparison.json).
+- [FA3 versus Triton comparison](fa3-vs-triton-comparison.json).
 - Triton + DFlash: [summary](triton-dflash/result.json), [per-request measurements](triton-dflash/requests.json), [server log](triton-dflash/server.log).
 - FA3 + DFlash: [summary](fa3-dflash/result.json), [per-request measurements](fa3-dflash/requests.json), [server log](fa3-dflash/server.log).

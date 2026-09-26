@@ -57,6 +57,6 @@ These historical measurements, recorded on July 12, 2026, use the earlier `opd-3
 
 ## Artifacts
 
-- [DFlash versus target-only comparison](fa3-target-only/dflash-vs-target-only-comparison.json).
-- FA3 target-only: [summary](fa3-target-only/result.json), [per-request measurements](fa3-target-only/requests.json), [server log](fa3-target-only/server.log), [launch configuration](fa3-target-only/config.yaml).
+- [DFlash versus target-only comparison](dflash-vs-target-only-comparison.json).
+- FA3 target-only: [summary](fa3-target-only/result.json), [per-request measurements](fa3-target-only/requests.json), [server log](fa3-target-only/server.log).
 - FA3 + DFlash: [summary](fa3-dflash/result.json), [per-request measurements](fa3-dflash/requests.json), [server log](fa3-dflash/server.log).
