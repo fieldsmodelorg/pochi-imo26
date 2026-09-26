@@ -47,5 +47,5 @@
     ],
     "none_count": 12
   },
-  "requests_file": "bf16-fa3-requests.json"
+  "requests_file": "requests.json"
 }

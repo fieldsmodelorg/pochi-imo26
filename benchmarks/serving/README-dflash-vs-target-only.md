@@ -11,8 +11,7 @@ doubled the throughput of the same BF16 target running alone with FA3.
 | FA3 + DFlash | 91.784 s | **2,856.111 tok/s** |
 
 DFlash provided a **2.0524x throughput speedup** and reduced end-to-end wall
-time by **51.28%**. This result means the draft model remains worthwhile even
-if there is not enough time to quantize either checkpoint.
+time by **51.28%**.
 
 ## Matched workload
 
@@ -30,8 +29,7 @@ The two measurements used:
 - a prefix-cache flush immediately before measurement; and
 - no benchmark warm-up request.
 
-The only material inference difference was speculative decoding: the
-target-only server reported `speculative_algorithm=None`, while the comparison
+The target-only server reported `speculative_algorithm=None`, while the comparison
 server used the BF16 DFlash draft with block size 8 and draft window 512.
 
 ## Result validity
@@ -53,18 +51,12 @@ across multiple accepted tokens. On this workload, that reduction in target
 passes is larger than the added draft and verification cost, yielding the
 measured 2.05x gain.
 
-The result supports a practical near-term configuration of **BF16 target +
-BF16 draft + FA3 + DFlash**. Quantization is an additional optimization, not a
-prerequisite for meeting the current throughput objective.
+## Scope
+
+These historical measurements use the earlier `opd-32b-deploy` checkpoint on two H200s with TP1/DP2. There is one timed 32-request batch per condition. The measurements do not assess proof quality or end-to-end proof-search speed on the final eight-GPU deployment.
 
 ## Artifacts
 
-- `result.json`: target-only summary;
-- `requests.json`: all target-only per-request measurements and output hashes;
-- `config.yaml`: exact strict evaluation configuration used to launch the server;
-- `server.log`: complete target-only SGLang runtime log;
-- `client.log`: client summary output; and
-- `comparison.json`: machine-readable target-only versus DFlash comparison.
-
-The matched DFlash source artifacts are in the adjacent
-`fa3-vs-triton-dp2-c32-imo2025-p1-20260712` result directory.
+- [DFlash versus target-only comparison](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/dflash-vs-target-only-comparison.json).
+- FA3 target-only: [summary](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/result.json), [per-request measurements](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/requests.json), [server log](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/server.log), [launch configuration](bf16-fa3-target-only-dp2-c32-imo2025-p1-20260712/config.yaml).
+- FA3 + DFlash: [summary](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/result.json), [per-request measurements](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/requests.json), [server log](bf16-fa3-dflash-dp2-c32-imo2025-p1-20260712/server.log).
