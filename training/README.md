@@ -39,7 +39,7 @@ top-level directories live under `training/`. So:
 
 | model | how it was produced |
 |---|---|
-| `ycchen/proof-pilot-checkpoints` step01 → step09 | tokenizer transplant → sink init → stage-1 SFT → YaRN-256k → soft distillation (her pipeline above) |
+| `fieldsmodelorg/proof-pilot-checkpoints` step01 → step09 | tokenizer transplant → sink init → stage-1 SFT → YaRN-256k → soft distillation (her pipeline above) |
 | `chankhavu/yccchen-olmo3-deploy` (= `fieldsmodelorg/FM-Pochi-32B-ProofPilot`) | her OPD v2 from step09, `env_v33.sh` settings, OPD step 200, deploy format |
 | `fieldsmodelorg/FM-Pochi-32B-IMO26` (`opd-32b-bf16-step-*`) | our OPD v2 on 64× B200, warm-started from the deploy model above (her OPD step 200) |
 

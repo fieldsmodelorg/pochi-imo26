@@ -160,8 +160,8 @@ The complete input set is just models + the prompt seed + the config:
 |---|---|---|
 | Teacher | `deepseek-ai/DeepSeek-V4-Flash` | frozen scorer; hidden dim 4096 |
 | Prompt dataset (agentic seed) | `chankhavu/ycchen-dsflash-proof-distill-v2-test` | mirror of `ycchen/dsflash-proof-distill-v2-test` (no longer public); `per_problem` config: 1,776 hard AoPS/olympiad problems + DeepSeek proofs |
-| **OPD start** (pre-OPD student) | `ycchen/proof-pilot-checkpoints/step09-softdistill-v2test-32b` | = her `stage1-v2-32b-softdistill-v2test`; ~65 GB bf16 |
-| **OPD final** (delivered 32B) | `ycchen/proof-pilot-checkpoints/step10-opd-32b-s150` | her result after ~150 OPD steps; ~65 GB bf16 |
+| **OPD start** (pre-OPD student) | `fieldsmodelorg/proof-pilot-checkpoints/step09-softdistill-v2test-32b` | = her `stage1-v2-32b-softdistill-v2test`; ~65 GB bf16 |
+| **OPD final** (delivered 32B) | `fieldsmodelorg/proof-pilot-checkpoints/step10-opd-32b-s150` | her result after ~150 OPD steps; ~65 GB bf16 |
 | Her resolved config, OPD pool + admitted rollouts | `ycchen/proof-pilot-datasets/step10-opd-pool-rollouts/` | **no longer public**; not needed to run (config = `env_v33.sh` §3, pool regenerates from the seed) |
 
 - **Reproduce** her run → start from **step09** + teacher + dataset + `env_v33.sh`.

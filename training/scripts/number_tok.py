@@ -13,9 +13,9 @@ import base64
 import tiktoken
 from transformers import AutoTokenizer
 
-OLMO = "/home/4/uq06834/Working/hdd/BigModels/Olmo-3-1025-7B"
-DEEPSEEK = "/home/4/uq06834/Working/hdd/BigModels/DeepSeek-V4-Flash"
-KIMI_TIKTOKEN = "/home/4/uq06834/Working/hdd/BigModels/Kimi-K2.6-tok/tiktoken.model"
+OLMO = "/models/Olmo-3-1025-7B"
+DEEPSEEK = "/models/DeepSeek-V4-Flash"
+KIMI_TIKTOKEN = "/models/Kimi-K2.6-tok/tiktoken.model"
 
 # Kimi pretokenization regex (from tokenization_kimi.py); note \p{N}{1,3}.
 KIMI_PAT = "|".join([

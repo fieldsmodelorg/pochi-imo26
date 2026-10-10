@@ -69,7 +69,7 @@ cleanup() {
   for p in "${SERVER_PIDS[@]}"; do kill "$p" 2>/dev/null; done
   for n in "${TEACHER_NODES[@]}" "${ROLLOUT_NODES[@]}" "${TRAINER_NODES_ARR[@]}"; do
     srun --jobid="$HOLDER" --overlap --nodelist="$n" --nodes=1 --ntasks=1 \
-      bash -c 'pkill -9 -f sglang.launch_server; pkill -9 -f opd_v2.trainer.service' 2>/dev/null &
+      bash -c 'pkill -9 -f "[s]glang.launch_server"; pkill -9 -f "[o]pd_v2.trainer.service"' 2>/dev/null &   # [x] so pkill never matches this bash -c itself
   done
   wait 2>/dev/null
 }
@@ -157,6 +157,7 @@ srun --jobid="$HOLDER" --overlap ${CTR[@]+"${CTR[@]}"} --nodelist="$TRAINER_NODE
       > '"$RUN_DIR"'/trainer_$SLURM_NODEID.log 2>&1
   ' > "$RUN_DIR/trainersrun.log" 2>&1 &
 TRAINER_SRUN_PID=$!
+SERVER_PIDS+=("$TRAINER_SRUN_PID")                  # so the EXIT trap also tears the trainer srun down
 echo ">>> trainer srun pid=$TRAINER_SRUN_PID" | tee -a "$MAIN"
 
 # ---- 6) orchestrator (head node, CPU process) ----

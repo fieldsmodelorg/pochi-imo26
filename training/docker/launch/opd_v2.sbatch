@@ -5,7 +5,8 @@
 #SBATCH --gres=gpu:8
 #SBATCH --cpus-per-task=96
 #SBATCH --exclusive
-#SBATCH --mem=0                     # all node RAM: CPU-offloaded 32B trainer + teacher /dev/shm spool (her sbatch: 1600G)
+#SBATCH --mem=0
+# --mem=0 = all node RAM: CPU-offloaded 32B trainer + teacher /dev/shm spool (her sbatch: --mem=1600G)
 #SBATCH --time=4-00:00:00
 #SBATCH --requeue
 #SBATCH --output=opd_v2_%j.out
@@ -61,6 +62,8 @@ MOUNTS="$(IFS=,; echo "${mounts[*]}")${EXTRA_CONTAINER_MOUNTS:+,$EXTRA_CONTAINER
 # the container (enroot rootfs is read-only by default).
 export SRUN_CONTAINER_ARGS="--container-image=$OPD_IMAGE --container-mounts=$MOUNTS --no-container-mount-home --container-writable ${EXTRA_CONTAINER_ARGS:-}"
 
+# a slurm requeue (node failure) must continue from the durable checkpoint, not restart from step 0
+[ "${SLURM_RESTART_COUNT:-0}" -gt 0 ] && export RESUME=1
 source "$LAUNCH/$OPD_ENV"
 
 echo "=== OPD v2 job=$SLURM_JOB_ID nodes=$SLURM_JOB_NUM_NODES ($SLURM_JOB_NODELIST) preset=$OPD_ENV run=$RUN_NAME $(date) ==="

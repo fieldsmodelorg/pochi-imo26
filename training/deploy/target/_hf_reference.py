@@ -29,7 +29,7 @@ from encoding_dsv4 import encode_messages  # noqa: E402
 
 # Default 7B stage1; override with PP_REF_MODEL to build a reference for another
 # olmo3_sink checkpoint (e.g. the 32B target, for its gptq serving-parity test).
-MODEL = Path(os.environ.get("PP_REF_MODEL", str(ROOT / "outputs" / "stage1-2node")))
+MODEL = Path(os.environ.get("PP_REF_MODEL", str(ROOT.parent / "outputs" / "stage1-2node")))  # <repo>/outputs
 # ref/ tag derives from the model dir so 7B/32B references don't collide.
 OUT_DIR = Path(__file__).resolve().parent / "ref"
 

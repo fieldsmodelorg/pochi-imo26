@@ -13,9 +13,9 @@ import random
 import tiktoken
 from transformers import AutoTokenizer
 
-OLMO = "/home/4/uq06834/Working/hdd/BigModels/Olmo-3-1025-7B"
-DEEPSEEK = "/home/4/uq06834/Working/hdd/BigModels/DeepSeek-V4-Flash"
-KIMI_TIKTOKEN = "/home/4/uq06834/Working/hdd/BigModels/Kimi-K2.6-tok/tiktoken.model"
+OLMO = "/models/Olmo-3-1025-7B"
+DEEPSEEK = "/models/DeepSeek-V4-Flash"
+KIMI_TIKTOKEN = "/models/Kimi-K2.6-tok/tiktoken.model"
 
 KIMI_PAT = "|".join([
     r"""[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]*[\p{Ll}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?""",

@@ -43,7 +43,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import td_normalize as N
 from td_build_l2 import OUT_SCHEMA, canon_row, jdump, MOD, TARGET_BYTES
 
-DEFAULT_ROOT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "datasets")
+DEFAULT_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "datasets")  # <repo>/datasets
 
 # file stem -> upstream_source label for science
 SCIENCE_UPSTREAM = {"so": "Math StackExchange", "rqa": "synthetic",

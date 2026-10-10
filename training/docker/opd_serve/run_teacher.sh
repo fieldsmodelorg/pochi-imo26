@@ -85,7 +85,7 @@ SPOOL="${SPOOL:-/dev/shm/opd-v2-teacher-spool}"; mkdir -p "$SPOOL"
 # Override MOE_BACKEND to force any backend. One-time ~15min flashinfer fp4 autotune on first launch (add --disable-flashinfer-autotune
 # below for a fast cold start; the JIT compile persists via JIT_CACHE_DIR).
 if [ -z "${MOE_BACKEND:-}" ]; then
-  _ccmaj=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | cut -d. -f1)
+  _ccmaj=$( (nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null || true) | head -1 | cut -d. -f1)
   if [ "${_ccmaj:-0}" = "10" ]; then MOE_BACKEND=flashinfer_mxfp4; else MOE_BACKEND=auto; fi
 fi
 ATTN_ARGS=(); [ -n "${ATTN_BACKEND:-}" ] && ATTN_ARGS+=(--attention-backend "$ATTN_BACKEND")

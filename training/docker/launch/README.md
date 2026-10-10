@@ -1,7 +1,9 @@
 # training/docker/launch — OPD v2 launchers for the cu128 image
 
 Faithful ports of Yi-Chia's `training/opd_v2/examples/run_mn.sh` orchestration (same 4-process loop,
-launch order, health gate). Baked into the image at `/opt/opd/launch/`.
+launch order, health gate). The launchers run from this checkout (`opd_v2.sbatch` and `launch_ssh.sh` use it
+directly); an image built from this repo also bakes them at `/opt/opd/launch/`. The published run image
+(`sha256:908516a7…`) predates them, so with that image always launch from the checkout.
 
 | file | what |
 |---|---|
@@ -69,7 +71,7 @@ orchestrator. Sentinels are keyed by the launch, so relaunching into the same `R
 With your own scheduler, run `run_mn_nodes.sh` inside the image on every node with `NODE_RANK`, `NNODES`, a shared
 `LAUNCH_ID` and `RUN_DIR` set (plus `NODE_HOST` if `hostname -f` isn't the name peers should use).
 
-**Already inside the image** (an allocation whose steps run in the container):
+**Already inside an image built from this repo** (an allocation whose steps run in the container):
 
 ```bash
 source /opt/opd/launch/env_v33.sh        # or env_max_b200.sh

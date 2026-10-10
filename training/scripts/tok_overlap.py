@@ -14,9 +14,9 @@ import functools
 
 from transformers import AutoTokenizer
 
-OLMO = "/home/4/uq06834/Working/hdd/BigModels/Olmo-3-1025-7B"
-DEEPSEEK = "/home/4/uq06834/Working/hdd/BigModels/DeepSeek-V4-Flash"
-KIMI_TIKTOKEN = "/home/4/uq06834/Working/hdd/BigModels/Kimi-K2.6-tok/tiktoken.model"
+OLMO = "/models/Olmo-3-1025-7B"
+DEEPSEEK = "/models/DeepSeek-V4-Flash"
+KIMI_TIKTOKEN = "/models/Kimi-K2.6-tok/tiktoken.model"
 
 
 @functools.lru_cache(maxsize=1)

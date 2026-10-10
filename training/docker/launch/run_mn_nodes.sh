@@ -131,18 +131,30 @@ cleanup() {
   echo ">>> cleanup rank=$RANK role=$ROLE tag=$TAG rc=$rc $(date)" | tee -a "$MAIN"
   [ "$IS_HEAD" = 1 ] && : > "$STOP" 2>/dev/null
   [ "$rc" != 0 ] && ! stop_requested && : > "$RUN_DIR/FAILED_${HOLDER}_rank${RANK}" 2>/dev/null
-  pkill -9 -f sglang.launch_server 2>/dev/null
-  pkill -9 -f opd_v2.trainer.service 2>/dev/null
+  pkill -9 -f '[s]glang.launch_server' 2>/dev/null
+  pkill -9 -f '[o]pd_v2.trainer.service' 2>/dev/null
   wait 2>/dev/null
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
 
-# block until STOP / any FAILED, or until one of the given PIDs dies (return 1 = a child died).
+# block until STOP / any FAILED, or until one of the given PIDs exits (return 1 = a child died).
+# A trainer that exits 0 has been told to /stop by the orchestrator: that is a clean finish, so wait for the
+# head's STOP (up to STOP_GRACE s, while the orchestrator flushes) instead of reporting a failure.
 serve_wait() {
-  local pids=("$@")
+  local pids=("$@") p rc t0
   while :; do
-    for p in "${pids[@]}"; do kill -0 "$p" 2>/dev/null || { echo ">>> [rank $RANK] a child ($p) died -> exit" | tee -a "$MAIN"; return 1; }; done
+    for p in "${pids[@]}"; do
+      kill -0 "$p" 2>/dev/null && continue
+      wait "$p"; rc=$?
+      if [ "$ROLE" = trainer ] && [ "$rc" = 0 ]; then
+        echo ">>> [rank $RANK] trainer exited cleanly; waiting for STOP" | tee -a "$MAIN"
+        t0=$(date +%s)
+        until stop_requested || [ $(( $(date +%s) - t0 )) -gt "${STOP_GRACE:-1800}" ]; do sleep 5; done
+        return 0
+      fi
+      echo ">>> [rank $RANK] a child ($p) died rc=$rc -> exit" | tee -a "$MAIN"; return 1
+    done
     stop_requested && { echo ">>> [rank $RANK] STOP/FAILED seen -> shutting down" | tee -a "$MAIN"; return 0; }
     sleep 15
   done
@@ -255,12 +267,15 @@ if [ "$IS_HEAD" = 1 ]; then
     for _ in $(seq 60); do kill -0 "$ORCH_PID" 2>/dev/null || return 0; sleep 1; done
     kill -9 "$ORCH_PID" 2>/dev/null
   }
+  trainer_done=0
   while kill -0 "$ORCH_PID" 2>/dev/null; do
     if compgen -G "$FAILED_GLOB" >/dev/null; then
       stop_orch "FAILED from $(ls $FAILED_GLOB | xargs -n1 basename | tr '\n' ' ')"; break
     fi
-    if ! kill -0 "$TRAINER_PID" 2>/dev/null; then
-      stop_orch "local trainer died"; break
+    if [ "$trainer_done" = 0 ] && ! kill -0 "$TRAINER_PID" 2>/dev/null; then
+      wait "$TRAINER_PID"; trc=$?
+      # rc 0 = the orchestrator sent /stop and is finishing up (pool/dump flush): let it exit on its own
+      [ "$trc" = 0 ] && trainer_done=1 || { stop_orch "local trainer died rc=$trc"; break; }
     fi
     sleep 15
   done

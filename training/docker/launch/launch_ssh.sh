@@ -10,8 +10,8 @@
 #   bash training/docker/launch/launch_ssh.sh hosts.txt stop     # remove this launcher's containers
 #
 # Requirements: passwordless ssh to every host, docker + NVIDIA container toolkit on every host, the image
-# present (or pullable) on every host, and RUN_DIR / JIT_CACHE_DIR / model dirs on a shared FS at the
-# same path everywhere. Hosts must reach each other by the names in HOSTFILE (set NODE_HOST per line as
+# present (or pullable) on every host, and RUN_DIR / JIT_CACHE_DIR / model dirs AND this checkout on a shared FS
+# at the same path everywhere (the checkout's launch/ dir is mounted into each container; checked below). Hosts must reach each other by the names in HOSTFILE (set NODE_HOST per line as
 # "host routable-name" if the ssh name differs from the name other nodes should use).
 # Progress: $RUN_DIR/launch_rank<r>.log, $RUN_DIR/orchestrator.log (head), and `docker logs` on each host.
 set -euo pipefail
@@ -64,6 +64,13 @@ ENVF="$RUN_DIR/.launch_env_$LAUNCH_ID"
 ( umask 077; : > "$ENVF"
   for v in "${FWD[@]}"; do [ -n "${!v+x}" ] && printf '%s=%s\n' "$v" "${!v}" >> "$ENVF"; done
   printf 'NNODES=%s\nLAUNCH_ID=%s\n' "$NNODES" "$LAUNCH_ID" >> "$ENVF" )
+
+# preflight: every host must see this checkout's launch/ dir and the run dir at the same paths
+for line in "${LINES[@]}"; do
+  h=${line%% *}
+  ssh -o BatchMode=yes "$h" "test -f $(printf '%q' "$HERE/run_mn_nodes.sh") && test -d $(printf '%q' "$RUN_DIR")" \
+    || { echo "!!! $h cannot see $HERE/run_mn_nodes.sh or $RUN_DIR (both must be on a shared FS at the same path)" >&2; exit 1; }
+done
 
 echo ">>> launch_id=$LAUNCH_ID nnodes=$NNODES preset=$OPD_ENV image=$OPD_IMAGE run_dir=$RUN_DIR"
 rank=0; PIDS=(); HOSTS=()
