@@ -141,7 +141,7 @@ if [ "${#CTR[@]}" -gt 0 ]; then   # the image's python lives in the container ->
 else
   "${MC[@]}" 2>&1 | tee -a "$MAIN"
 fi
-[ -f "$RUN_DIR/config.json" ] || { echo "config.json not written; abort" | tee -a "$MAIN"; exit 1; }
+[ "${PIPESTATUS[0]}" = 0 ] && [ -f "$RUN_DIR/config.json" ] || { echo "config.json not written; abort" | tee -a "$MAIN"; exit 1; }
 
 # ---- 5) trainer: single cross-node srun, torchrun c10d ----
 echo ">>> launch trainer (world=$((8*TRAINER_NNODES)) on $TRAINER_NODES)" | tee -a "$MAIN"

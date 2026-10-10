@@ -39,7 +39,7 @@ unset CUDA_VISIBLE_DEVICES GPU_DEVICE_ORDINAL \
       SLURM_DISTRIBUTION SLURM_GPUS SLURM_GPUS_PER_NODE SLURM_GPUS_ON_NODE \
       SLURM_STEP_GPUS SLURM_JOB_GPUS
 
-source .venv/bin/activate
+source training/.venv/bin/activate   # uv sync in training/ (pyproject.toml + uv.lock live there)
 # Optional redistributed nvcc (FA3 JIT build workaround); skipped if absent.
 REDIST="$REPO/.cuda_redist/cuda_nvcc-linux-x86_64-12.6.85-archive"
 if [ -d "$REDIST" ]; then

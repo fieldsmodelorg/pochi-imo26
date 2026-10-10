@@ -19,7 +19,7 @@ OPD_V2="$(cd "$HERE/.." && pwd)"
 REPO="${PP_ROOT:-$(cd "$HERE/../../.." && pwd)}"
 SRC="$OPD_V2/src"
 OPD_SRC="$REPO/training/_vendor_opd"
-VENV="${PP_PYTHON:-$REPO/.venv/bin/python}"
+VENV="${PP_PYTHON:-$REPO/training/.venv/bin/python}"
 
 HOLDER=${SLURM_JOB_ID:?must run inside a slurm allocation}
 TAG=${TAG:-opd_v2_$HOLDER}

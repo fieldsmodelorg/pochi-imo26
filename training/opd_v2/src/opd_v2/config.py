@@ -220,7 +220,9 @@ class AgenticCfg:
                                         # ≈50k tok, a normal proof is far below that)
     # seed (cold-start): fill entirely from DeepSeek r3_hard2000 nested data
     seed_format: str = "hf_per_problem"  # "hf_per_problem" | "records_jsonl"
-    seed_source: str = "ycchen/dsflash-proof-distill-v2-test"  # HF repo (per_problem config) or records.jsonl path
+    # HF repo (per_problem config) or records.jsonl path. Her original ycchen/dsflash-proof-distill-v2-test is no
+    # longer public; this is the mirror (same default the launch presets set via SEED_SOURCE).
+    seed_source: str = "chankhavu/ycchen-dsflash-proof-distill-v2-test"
     seed_hf_config: str = "per_problem"
     pool_dir: str = ""                   # empty = <run>/pool
 

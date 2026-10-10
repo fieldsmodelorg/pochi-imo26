@@ -226,3 +226,4 @@ __marimo__/
 !training/docker/wheels/
 !training/docker/opd_serve/wheels/
 !training/stage1_v2/pkg.manifest
+!training/deploy/target/

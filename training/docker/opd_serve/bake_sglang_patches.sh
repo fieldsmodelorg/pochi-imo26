@@ -27,7 +27,7 @@ if grep -q "_run_flashinfer_paged_with_sinks" "$SGL/srt/layers/attention/flashin
   echo "[bake] native OLMo3 FlashInfer/FlashRL support detected; skipping rollout overlays"
 else
   # 1) Legacy OLMo sink model overlay.
-  cp -v "$OPD_REPO/deploy/target/olmo2_sink.py" "$SGL/srt/models/olmo2.py"
+  cp -v "$OPD_REPO/training/deploy/target/olmo2_sink.py" "$SGL/srt/models/olmo2.py"
 
   # 2) Legacy flash_rl fp8 loader + SWA model_config overlays.
   if [ "$REGEN" = "1" ]; then

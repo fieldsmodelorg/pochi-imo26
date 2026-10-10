@@ -15,7 +15,7 @@ import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-sys.path.insert(0, ROOT)
+sys.path.append(os.path.join(ROOT, "training"))   # olmo3_sink lives under training/; appended so dflash.py wins
 
 TARGET = os.path.join(ROOT, "outputs/stage1-7b-4n")
 L4 = os.path.join(ROOT, "data/l4-g2r05-ml12288-mc65536")

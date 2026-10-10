@@ -1,0 +1,61 @@
+# Olmo-3.1-32B-Think base, DeepSeek-V4-Flash tokenizer (vocab 100,278 -> 129,280).
+# Same recipe as olmo3_think_7b: centered-OMP new-token fill + special-token role
+# mapping (Olmo -> DeepSeek) + DeepSeek-V4 native chat template. The Think variant
+# is chosen so chat/structural special tokens are trained (see special_map).
+# NOTE: base hidden 5120 vs donor hidden 4096 differ — fine: OMP solves coefficients
+# in donor space and reconstruction runs in base space, so the dims need not match.
+base:            /models/Olmo-3.1-32B-Think
+donor_weights:   /models/DeepSeek-V4-Flash-donor   # only embed/head shards needed
+donor_tokenizer: /models/DeepSeek-V4-Flash-donor
+out:             /models/Olmo-3.1-32B-Think-deepseekTok
+
+k: 64
+centered: true        # essential for lm_head logit calibration
+cosine_select: true   # cosine atom selection (false = raw canonical OMP)
+ridge: 1.0e-3
+
+tensors:
+  base_embed:  model.embed_tokens.weight
+  base_head:   lm_head.weight
+  donor_embed: embed.weight
+  donor_head:  head.weight
+
+# donor special-token string -> base-tokenizer text (identical to 7B-Think: the
+# Olmo tokenizer.json is byte-for-byte the same across 7B / 3.1-32B Think variants).
+special_map:
+  "<｜begin▁of▁sentence｜>": "<|endoftext|>"
+  "<｜end▁of▁sentence｜>": "<|endoftext|>"
+  "<｜▁pad▁｜>": "<|pad|>"
+  "<｜User｜>": "<|im_start|>user\n"
+  "<｜Assistant｜>": "<|im_start|>assistant\n"
+  "<think>": "<think>"
+  "</think>": "</think>"
+
+pad_token: "<｜▁pad▁｜>"
+
+# DeepSeek-V4 native chat format (from donor encoding/encoding_dsv4.py).
+# Thinking mode: generation prompt ends with <｜Assistant｜><think>.
+chat_template: |
+  {{- bos_token -}}
+  {%- if messages and messages[0]['role'] == 'system' -%}
+  {{- messages[0]['content'] -}}
+  {%- set loop_messages = messages[1:] -%}
+  {%- else -%}
+  {%- set loop_messages = messages -%}
+  {%- endif -%}
+  {%- for message in loop_messages -%}
+  {%- if message['role'] == 'user' -%}
+  {{- '<｜User｜>' + message['content'] -}}
+  {%- elif message['role'] == 'assistant' -%}
+  {{- '<｜Assistant｜>' -}}
+  {%- if message.get('reasoning_content') -%}
+  {{- '<think>' + message['reasoning_content'] + '</think>' -}}
+  {%- else -%}
+  {{- '</think>' -}}
+  {%- endif -%}
+  {{- message['content'] + eos_token -}}
+  {%- endif -%}
+  {%- endfor -%}
+  {%- if add_generation_prompt -%}
+  {{- '<｜Assistant｜><think>' -}}
+  {%- endif -%}

@@ -10,7 +10,7 @@ Covers the three sink implementations + the serving path:
   * transformers FA2 sink (our B200 trainer path)     -> opd_v2_train_smoke.py
   * Yi-Chia's patched-FA3 in-kernel sink (Hopper)      -> olmo3_sink/tests/_fa3_*
   * OLMo-core post-correction sink (FA2/FA3 + CP)       -> OLMo-core src/test/nn/attention/*
-  * sglang triton in-kernel sink (serving parity)       -> deploy/target/_parity_test.py
+  * sglang triton in-kernel sink (serving parity)       -> training/deploy/target/_parity_test.py
 
 Usage:
   python test_attention_sink.py                # run the 'unit' group (default)
@@ -97,7 +97,7 @@ TARGETS = [
            ("gpus2", "olmo_core")),
     Target("serve_triton_parity",
            "sglang triton in-kernel sink logprob parity vs HF olmo3_sink (needs a live server)",
-           f"{REPO}/deploy/target/_parity_test.py", "script", "integration", ("sglang", "server"),
+           f"{REPO}/training/deploy/target/_parity_test.py", "script", "integration", ("sglang", "server"),
            add_pythonpath=REPO_PYTHONPATH),
 ]
 

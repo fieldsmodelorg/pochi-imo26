@@ -7,7 +7,7 @@ The per-offset implementation is the verified ground truth; the batched kernel
 test pins their equivalence so future kernel edits can't silently diverge.
 
 Run (needs FA3 + a GPU):
-  PYTHONPATH=$ROOT:$ROOT/training/dflash python training/dflash/tests/test_nodup_attn.py
+  PYTHONPATH=$ROOT/training/dflash:$ROOT/training python training/dflash/tests/test_nodup_attn.py
 """
 from __future__ import annotations
 

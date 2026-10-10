@@ -41,7 +41,7 @@ from transformers import AutoConfig
 HERE = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(HERE, "experiments"))
 sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
+sys.path.append(os.path.abspath(os.path.join(HERE, "..")))   # training/ (olmo3_sink); after HERE so dflash.py wins over the dflash/ package
 
 from canonical_fa3_train import (
     CanonicalFA3Draft,

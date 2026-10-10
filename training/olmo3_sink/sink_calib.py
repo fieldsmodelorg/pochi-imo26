@@ -19,7 +19,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-TEXT = Path(__file__).resolve().parent.parent / "evaluation" / "data" / "deepseek-math-v2.txt"
+# sink calibration corpus (sha256 d3f478ac…, recorded in each sink checkpoint's sink_provenance.json)
+TEXT = Path(__file__).resolve().parent / "calib" / "deepseek-math-v2.txt"
 
 
 def lm_loss(model, windows, device) -> float:

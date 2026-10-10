@@ -111,15 +111,22 @@ RUN_NAME=agentic_32b_lc140k_v33  MAX_STEPS=100000  WANDB_PROJECT=opd-v2-agentic
 knobs off**. So her best run is **canonical β=1 reverse-KL OPD**, agentic producer, `length` admission
 filter, 140k ctx / 128k gen, 32B student.
 
-**Ground-truth cross-check.** Her exact *resolved* production config is published at
-`ycchen/proof-pilot-datasets` → `step10-opd-pool-rollouts/agentic_32b_lc140k_v33/config.json` (that
-dataset is her Stage-2 reproducibility artifacts, incl. the OPD pool + admitted rollout shards; the OPD
-seed is still `dsflash-proof-distill-v2-test`, unchanged). Verified field-by-field against
-`training/docker/launch/env_v33.sh`: **identical except two intended deltas — (1) `attn`
-(`olmo3_sink_fa3` → `olmo3_sink_fa2`), the B200 kernel swap, and (2) `CHECKPOINT_EVERY` (50 → 25),
-an operational change (more frequent durable ckpts; does not touch training dynamics/optimizer/RNG/data
-order — the model at any step is bit-identical).** Confirms β=1 revKL, V34 off, `max_staleness=0`, seed
-`dsflash-proof-distill-v2-test`.
+**Cross-check against her run.** Her resolved production config was cross-checked field by field
+against `training/docker/launch/env_v33.sh` (her copy lived in `ycchen/proof-pilot-datasets` →
+`step10-opd-pool-rollouts/agentic_32b_lc140k_v33/config.json`, a repo that is **no longer public**).
+Re-verified by resolving `config.json` from her `run_agentic_mn_32b.sbatch` and from `env_v33.sh` with
+`make_config.py`: the training-relevant fields are identical except three intended deltas —
+1. `trainer.attn`: `olmo3_sink_fa3` → `olmo3_sink_fa2` (the B200 kernel swap; same math, validated parity);
+2. `trainer.checkpoint_every`: 50 → 25 (operational: more frequent durable checkpoints; does not touch the
+   loss, optimizer, LR schedule or sampling);
+3. `agentic.seed_source`: `ycchen/dsflash-proof-distill-v2-test` → `chankhavu/ycchen-dsflash-proof-distill-v2-test`
+   (a mirror made while the original was public; the original is no longer public, so its byte-faithfulness
+   can no longer be checked against it).
+
+The remaining differing fields are cluster paths (`student_path`, `deploy_config_src`, `teacher_path`,
+`problems_parquet`). Her sbatch pointed the trainer at the training-format checkpoint and the rollout at the
+deploy-format one; the presets here use the deploy-format dir for both (transformers rebuilds
+`rope_parameters` from the legacy `rope_scaling`). Confirms β=1 revKL, V34 off, `max_staleness=0`.
 
 Notable non-default choices:
 - `WEIGHT_SYNC_EVERY=4` (not the default 1) — with `TARGET_INFLIGHT=512` and long-CoT gen time, this
@@ -147,23 +154,23 @@ is entirely the sbatch overrides.
 ## 5. Data & checkpoints — everything to reproduce or continue (all public)
 
 OPD is on-policy: there is **no training corpus** — the student self-generates rollouts, scored live.
-The complete input set is just models + the prompt seed + the config, all published:
+The complete input set is just models + the prompt seed + the config:
 
 | what | HF id | notes |
 |---|---|---|
 | Teacher | `deepseek-ai/DeepSeek-V4-Flash` | frozen scorer; hidden dim 4096 |
-| Prompt dataset (agentic seed) | `ycchen/dsflash-proof-distill-v2-test` | `per_problem` config; 1,776 hard AoPS/olympiad problems + DeepSeek proofs |
+| Prompt dataset (agentic seed) | `chankhavu/ycchen-dsflash-proof-distill-v2-test` | mirror of `ycchen/dsflash-proof-distill-v2-test` (no longer public); `per_problem` config: 1,776 hard AoPS/olympiad problems + DeepSeek proofs |
 | **OPD start** (pre-OPD student) | `ycchen/proof-pilot-checkpoints/step09-softdistill-v2test-32b` | = her `stage1-v2-32b-softdistill-v2test`; ~65 GB bf16 |
 | **OPD final** (delivered 32B) | `ycchen/proof-pilot-checkpoints/step10-opd-32b-s150` | her result after ~150 OPD steps; ~65 GB bf16 |
-| Her resolved config | `ycchen/proof-pilot-datasets/step10-opd-pool-rollouts/agentic_32b_lc140k_v33/config.json` | = `env_v33.sh` (verified, §3) |
-| Her OPD pool + admitted rollouts | `ycchen/proof-pilot-datasets/step10-opd-pool-rollouts/` | archive; for cross-validation, not needed to run |
+| Her resolved config, OPD pool + admitted rollouts | `ycchen/proof-pilot-datasets/step10-opd-pool-rollouts/` | **no longer public**; not needed to run (config = `env_v33.sh` §3, pool regenerates from the seed) |
 
 - **Reproduce** her run → start from **step09** + teacher + dataset + `env_v33.sh`.
 - **Continue training** → warm-start from **step10-opd-32b-s150** + same teacher/dataset/config.
 - **Caveat — warm-start, not bit-exact resume.** The DCP checkpoint (fp32 optimizer + master weights +
-  scheduler) is multi-TB and **not** published (only the bf16 consolidated weights are). Her pool/rollouts
-  are published but not optimizer state. OPD is async-nondeterministic anyway, so exact reproduction is
-  impossible in principle — warm-start from the published weights (fresh optimizer) is the intended path.
+  scheduler) is multi-TB and **not** published (only the bf16 consolidated weights are). OPD is
+  async-nondeterministic (rollout requests carry no sampling seed; staleness and weight-sync timing depend
+  on the pipeline), so a rerun reproduces the recipe statistically, not bit-for-bit — warm-start from the
+  published weights (fresh optimizer) is the intended path.
 - **Student format:** the deploy-format student `chankhavu/yccchen-olmo3-deploy` (legacy-rope, for
   rollout + weight-sync) works for both roles in these presets; step09/step10 are the training-format
   consolidated checkpoints. Convert training→deploy with `deploy/make_olmo3sink_deploy.py` if needed.

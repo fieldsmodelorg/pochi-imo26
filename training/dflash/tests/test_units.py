@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """DFlash unit tests (1 GPU). Run:
-    PYTHONPATH=$ROOT:$ROOT/training/dflash uv run python training/dflash/tests/test_units.py
+    PYTHONPATH=$ROOT/training/dflash:$ROOT/training uv run python training/dflash/tests/test_units.py
 """
 
 import os
@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
-sys.path.insert(0, ROOT)
+sys.path.append(os.path.join(ROOT, "training"))   # olmo3_sink lives under training/; appended so dflash.py wins
 
 from transformers import AutoConfig
 

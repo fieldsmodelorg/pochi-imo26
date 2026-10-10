@@ -5,6 +5,7 @@
 #SBATCH --gres=gpu:8
 #SBATCH --cpus-per-task=96
 #SBATCH --exclusive
+#SBATCH --mem=0                     # all node RAM: CPU-offloaded 32B trainer + teacher /dev/shm spool (her sbatch: 1600G)
 #SBATCH --time=4-00:00:00
 #SBATCH --requeue
 #SBATCH --output=opd_v2_%j.out
@@ -23,9 +24,12 @@
 #   STUDENT_PATH=/shared/models/student-deploy DEEPSEEK_V4_FLASH=/shared/models/DeepSeek-V4-Flash \
 #   sbatch training/docker/launch/opd_v2.sbatch
 #
-# OPD_IMAGE: a squashfs imported once on the shared FS (recommended; avoids every node pulling ~40GB):
-#   enroot import -o /shared/ycchen-opd+cu128.sqsh docker://chankhavu/ycchen-opd:cu128
-# or a registry ref pyxis understands (e.g. chankhavu/ycchen-opd:cu128).
+# OPD_IMAGE: a squashfs imported once on the shared FS (recommended; avoids every node pulling the image).
+# Import by DIGEST so the run is pinned (the image our B200 run used):
+#   enroot import -o /shared/ycchen-opd+cu128.sqsh \
+#     'docker://chankhavu/ycchen-opd@sha256:908516a710f3f6c4157a92c0f9723ff862f84a9c3bf347601c6b2b9ca0ef1a25'
+# What runs inside the image is the image's own /opt/opd/repo (trainer/orchestrator/role code); only the
+# launcher + env presets come from this checkout.
 # The launcher itself runs on the batch host (needs srun/scontrol); every srun step runs inside the image.
 set -uo pipefail
 unset CUDA_VISIBLE_DEVICES                     # scrub submit-environment pollution (as in her sbatch)
@@ -44,14 +48,18 @@ export STUDENT_DEPLOY_PATH="${STUDENT_DEPLOY_PATH:-$STUDENT_PATH}"  # config/tok
 export JIT_CACHE_DIR="${JIT_CACHE_DIR:-$(dirname "$RUN_DIR")/jit_cache}"   # FIXED path, persists across runs
 mkdir -p "$RUN_DIR" "$JIT_CACHE_DIR"
 
-# Bind every host path the steps touch at the same path inside the container (dedup'd), plus any extras.
+# Bind every host path the steps touch at the SAME path inside the container (the configs record the paths
+# as given, so a symlinked /shared must appear at /shared, backed by its real target). Dedup'd, plus extras.
 mounts=()
 for d in "$RUN_DIR" "$JIT_CACHE_DIR" "$STUDENT_PATH" "$ROLLOUT_MODEL" "$STUDENT_DEPLOY_PATH" "$DEEPSEEK_V4_FLASH"; do
-  d="$(readlink -f "$d")"
-  [[ " ${mounts[*]} " == *" $d:$d "* ]] || mounts+=("$d:$d")
+  [ -e "$d" ] || { echo "missing path: $d" >&2; exit 1; }
+  m="$(readlink -f "$d"):$d"
+  [[ " ${mounts[*]-} " == *" $m "* ]] || mounts+=("$m")
 done
 MOUNTS="$(IFS=,; echo "${mounts[*]}")${EXTRA_CONTAINER_MOUNTS:+,$EXTRA_CONTAINER_MOUNTS}"
-export SRUN_CONTAINER_ARGS="--container-image=$OPD_IMAGE --container-mounts=$MOUNTS --no-container-mount-home ${EXTRA_CONTAINER_ARGS:-}"
+# --container-writable: the role scripts create $HOME/.cache links and the seed download writes HF_HOME inside
+# the container (enroot rootfs is read-only by default).
+export SRUN_CONTAINER_ARGS="--container-image=$OPD_IMAGE --container-mounts=$MOUNTS --no-container-mount-home --container-writable ${EXTRA_CONTAINER_ARGS:-}"
 
 source "$LAUNCH/$OPD_ENV"
 

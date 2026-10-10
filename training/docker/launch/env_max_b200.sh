@@ -19,7 +19,7 @@ export TEACHER_CONTEXT_LEN=190000                   # MUST exceed max_traj so th
 export RUN_NAME=${_user_run_name:-agentic_32b_lc160k_max}   # keep a caller-set RUN_NAME; else the MAX default
 unset _user_run_name
 
-_ccmaj=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | cut -d. -f1)
+_ccmaj=$( (nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null || true) | head -1 | cut -d. -f1)
 if [[ "${_ccmaj:-}" =~ ^[0-9]+$ ]] && [ "$_ccmaj" != "10" ]; then   # skip silently if nvidia-smi is unusable
   echo "WARNING: env_max_b200.sh sizes the trainer for B200 (~174GB/GPU); this node is sm_${_ccmaj}x — use env_v33.sh" >&2
 fi

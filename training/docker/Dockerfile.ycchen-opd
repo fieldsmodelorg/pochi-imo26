@@ -22,7 +22,9 @@
 # whitelists only training/ + the shared math_3r prompts):
 #   DOCKER_BUILDKIT=1 docker build -f training/docker/Dockerfile.ycchen-opd -t ycchen-opd:cu128 .
 # =============================================================================
-ARG BASE=chankhavu/olmo3-olmocore:cu128-fa2-sink
+# Pinned by digest: the exact base the published chankhavu/ycchen-opd:cu128 (sha256:908516a7…) was built on
+# (its first 21 layers are this image's): torch 2.10+cu128, flash_attn 2.8.x, OLMo-core (hav4ik/OLMo-core@8309083).
+ARG BASE=chankhavu/olmo3-olmocore:cu128-fa2-sink@sha256:e67d3894d06073e7a415809b39dde2c2c50209a28f88bdcc4c3b8ba3c0f8aec4
 
 # CUDA-13 forward-compat source. sglang 0.5.14 is inherently a CUDA-13 build (it hard-pins
 # cuda-python>=13.0 + torch 2.11.0/cu130; sglang went CUDA-13-only at 0.5.11 and CANNOT be installed on
@@ -73,7 +75,10 @@ RUN set -eux; \
 # opd_v2 runtime deps (trainer + orchestrator). torch/flash_attn already in base.
 # transformers is PINNED to Yi-Chia's 5.9.0: the base ships 5.13.0, which broke olmo3_sink's rope
 # (transformers changed the Olmo3 rope_parameters API between 5.9 and 5.13 — verified in-container).
-RUN pip install --no-cache-dir \
+# constraints-train.txt = `pip list --format=freeze` of the published image's train env, so every package
+# below (and its deps) resolves to the version the B200 run used.
+COPY training/docker/constraints-train.txt /tmp/constraints-train.txt
+RUN pip install --no-cache-dir -c /tmp/constraints-train.txt \
         "transformers==5.9.0" \
         "liger-kernel==0.8.0" \
         aiohttp wandb pyarrow polars datasets safetensors einops sentencepiece \
@@ -143,9 +148,11 @@ PY
 # --attention-backend triton. Teacher (DeepSeek-V4-Flash) hidden-extract patches follow below.
 ENV SERVE_VENV=/opt/venv/serve
 ARG SGLANG_SPEC="sglang[srt]==0.5.14"
+# constraints-serve.txt = `uv pip freeze` of the published image's serve venv (sglang's whole dependency set).
+COPY training/docker/constraints-serve.txt /tmp/constraints-serve.txt
 RUN --mount=type=cache,target=/root/.cache/uv set -eux; \
     uv venv --python python3.12 "${SERVE_VENV}"; \
-    uv pip install --python "${SERVE_VENV}/bin/python" --prerelease=allow "${SGLANG_SPEC}"; \
+    uv pip install --python "${SERVE_VENV}/bin/python" --prerelease=allow -c /tmp/constraints-serve.txt "${SGLANG_SPEC}"; \
     "${SERVE_VENV}/bin/python" -c "import sglang; print('sglang', sglang.__version__)"
 
 # CUDA-13 forward-compat libcuda for the (inherently CUDA-13) serve venv — see the cuda13compat stage

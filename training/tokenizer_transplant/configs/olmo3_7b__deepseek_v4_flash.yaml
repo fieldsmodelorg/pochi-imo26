@@ -1,0 +1,17 @@
+# Olmo-3-1025-7B base, DeepSeek-V4-Flash tokenizer (vocab 100,278 -> 129,280).
+# Verified centered-OMP transplant; see ../MODEL_CARD.md and ../../docs/tokenizer_transplant.md.
+base:            /models/Olmo-3-1025-7B
+donor_weights:   /models/DeepSeek-V4-Flash-donor   # only embed/head shards needed
+donor_tokenizer: deepseek-ai/DeepSeek-V4-Flash
+out:             /models/Olmo-3-1025-7B-deepseekTok
+
+k: 64
+centered: true        # essential for lm_head logit calibration
+cosine_select: true   # cosine atom selection (false = raw canonical OMP)
+ridge: 1.0e-3
+
+tensors:
+  base_embed:  model.embed_tokens.weight
+  base_head:   lm_head.weight
+  donor_embed: embed.weight
+  donor_head:  head.weight

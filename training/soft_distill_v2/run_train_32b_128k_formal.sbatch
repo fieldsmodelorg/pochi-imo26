@@ -82,7 +82,7 @@ echo "[sdv2-32b-formal] student=$STUDENT index=$INDEX out=$OUT_DIR epochs=$EPOCH
 srun --cpu-bind=none --cpus-per-task="${SLURM_CPUS_PER_TASK:-96}" \
      --ntasks="$SLURM_NNODES" --ntasks-per-node=1 --kill-on-bad-exit=1 \
   bash -c '
-    '"$REPO"'/.venv/bin/python -m torch.distributed.run \
+    '"$REPO"'/training/.venv/bin/python -m torch.distributed.run \
       --nnodes='"$SLURM_NNODES"' --nproc_per_node=8 --node_rank=$SLURM_NODEID \
       --rdzv_id='"$SLURM_JOB_ID"' --rdzv_backend=c10d --rdzv_endpoint='"$MASTER_ADDR:$MASTER_PORT"' \
       '"$REPO"'/training/soft_distill_v2/train_soft_distill.py \

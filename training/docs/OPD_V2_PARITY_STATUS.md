@@ -42,4 +42,7 @@ Ported from the `hav4ik/ycchen-proof-pilot-codes` fork, branch `opd/b200-cu128` 
 `main` @ `bc03a2c`). The B200 items that were pending during bring-up are all closed there: the teacher MoE
 backend is auto-selected per arch in `run_teacher.sh` (sm_100 → `flashinfer_mxfp4`), and trainer FA2 sink,
 rollout triton sink and teacher were each validated on B200. The multi-node launcher is
-`training/docker/launch/run_mn_cu128.sh` (+ `opd_v2.sbatch` for pyxis/enroot slurm).
+`training/docker/launch/run_mn_cu128.sh` (+ `opd_v2.sbatch` for pyxis/enroot slurm). Our B200 run itself was
+launched on Ai2's Beaker with the per-replica launcher `run_mn_beaker.sh` (not shipped: Ai2-specific);
+`run_mn_nodes.sh` is its scheduler-free port with the same role logic, and the `config.json` the run resolves
+was checked byte-for-byte against the Beaker spec's.

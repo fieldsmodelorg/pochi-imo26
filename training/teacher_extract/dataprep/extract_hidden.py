@@ -31,8 +31,8 @@ import torch
 
 REPO = Path(__file__).resolve().parents[3]
 THIS_DIR = Path(__file__).resolve().parent
-if str(REPO) not in sys.path:
-    sys.path.insert(0, str(REPO))
+if str(REPO / "training") not in sys.path:
+    sys.path.insert(0, str(REPO / "training"))   # olmo3_sink (via opd.batch) lives under training/
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 

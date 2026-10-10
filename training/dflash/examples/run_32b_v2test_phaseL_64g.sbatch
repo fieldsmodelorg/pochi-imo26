@@ -42,7 +42,7 @@ unset CLAUDE_CODE_CHILD_SESSION CLAUDE_CODE_SESSION_ID CLAUDE_CODE_ENTRYPOINT \
 
 ROOT="${PP_ROOT:-$PWD}"
 cd "$ROOT"
-source .venv/bin/activate
+source training/.venv/bin/activate   # uv sync in training/ (pyproject.toml + uv.lock live there)
 # Optional redistributed nvcc (FA3 JIT build workaround); skipped if absent.
 REDIST=$ROOT/.cuda_redist/cuda_nvcc-linux-x86_64-12.6.85-archive
 if [ -d "$REDIST" ]; then
@@ -50,7 +50,7 @@ if [ -d "$REDIST" ]; then
   export PATH=$CUDA_HOME/bin:$PATH
   export LD_LIBRARY_PATH=$CUDA_HOME/lib64:${LD_LIBRARY_PATH:-}
 fi
-export PYTHONPATH=$ROOT/training:$ROOT/training/dflash
+export PYTHONPATH=$ROOT/training/dflash:$ROOT/training   # dflash/ first: its dflash.py must win over the dflash/ package
 
 # Cluster-specific NCCL fabric tuning: set NCCL_IB_HCA / NCCL_SOCKET_IFNAME for your
 # cluster (e.g. NCCL_IB_HCA=mlx5_0,... NCCL_SOCKET_IFNAME=eth0) before submitting.

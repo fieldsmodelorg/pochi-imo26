@@ -15,7 +15,7 @@
 # from the legacy rope_scaling; sglang needs the legacy form) — so STUDENT_PATH may equal ROLLOUT_MODEL.
 
 export PRODUCER=agentic
-export SEED_SOURCE=${SEED_SOURCE:-chankhavu/ycchen-dsflash-proof-distill-v2-test}   # OPD prompt dataset — byte-faithful, user-owned mirror of ycchen/dsflash-proof-distill-v2-test (public; deletion-proof for the ship run)
+export SEED_SOURCE=${SEED_SOURCE:-chankhavu/ycchen-dsflash-proof-distill-v2-test}   # OPD prompt dataset — byte-faithful, public mirror of ycchen/dsflash-proof-distill-v2-test (the original is no longer public)
 export SEED_HF_CONFIG=${SEED_HF_CONFIG:-per_problem}
 export ATTN_IMPL=olmo3_sink_fa2          # cu128 delta #1: post-correction sink on stock FA2 (B200 has no FA3; same kernel on H200)
 # (cu128 delta #2 is the rollout attention backend = triton, already the default in run_rollout.sh)
@@ -53,7 +53,7 @@ export TEACHER_CONTEXT_LEN=150000 TEACHER_MEMFRAC=0.6 TEACHER_MAXRUN=16
 # ---- trainer: 32B @140k -> CPU offload, HSDP ----
 export MICRO=131072 CHUNK_SIZE=2048 CPU_OFFLOAD=1 TRAIN_BATCH_TRAJS=64
 export BETA=1.0 LR=1e-5 WEIGHT_SYNC_EVERY=4 G4_EVERY=5 LOG_EVERY=1
-export CHECKPOINT_EVERY=25 CHECKPOINT_KEEP=2 HF_EXPORT=1 RESUME=0   # 25 (was her 50): more frequent durable ckpts; operational-only, no training-dynamics change
+export CHECKPOINT_EVERY=25 CHECKPOINT_KEEP=2 HF_EXPORT=1 RESUME=${RESUME:-0}   # RESUME=1 to continue a requeued run; 25 (was her 50): more frequent durable ckpts; operational-only, no training-dynamics change
 
 export RUN_NAME=${RUN_NAME:-agentic_32b_lc140k_v33}
 export MAX_STEPS=${MAX_STEPS:-100000}

@@ -40,8 +40,14 @@ Then, from the **repo root** (BuildKit uses `Dockerfile.ycchen-opd.dockerignore`
 DOCKER_BUILDKIT=1 docker build -f training/docker/Dockerfile.ycchen-opd -t ycchen-opd:cu128 .
 ```
 
-Base: `chankhavu/olmo3-olmocore:cu128-fa2-sink` (torch 2.10+cu128, flash_attn 2.8.x, olmo_core);
-override with `--build-arg BASE=...`. The build self-verifies both venvs (trainer imports + sink
+**BuildKit is required** (it reads the per-Dockerfile ignore file; the classic builder would use the root
+`.dockerignore`, which excludes `training/`, and fail at the first `COPY training/...`).
+
+Base: `chankhavu/olmo3-olmocore:cu128-fa2-sink`, pinned by digest (`sha256:e67d3894…`, the exact base of the
+published run image) — torch 2.10+cu128, flash_attn 2.8.x, olmo_core; override with `--build-arg BASE=...`.
+Python packages are pinned by `constraints-train.txt` / `constraints-serve.txt`, frozen from the published run image
+`chankhavu/ycchen-opd@sha256:908516a7…`; a fresh resolve of the serve venv against them reproduces all 193
+packages at the published versions. The build self-verifies both venvs (trainer imports + sink
 registration + math_3r prompts; sglang serve patches incl. the hybrid-SWA KV-pool patch; teacher
 hidden-extract patches). In the image the repo lives at `/opt/opd/repo` (same layout as here).
 

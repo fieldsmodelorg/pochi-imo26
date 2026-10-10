@@ -32,7 +32,7 @@ PORT=8200; TP=1
 while [ $# -gt 0 ]; do case "$1" in --port) PORT=$2; shift 2;; --tp) TP=$2; shift 2;; *) shift;; esac; done
 
 SGL=${SGLANG_PKG_DIR:-/sgl-workspace/sglang/python/sglang}
-SINK=$ROOT/deploy/target/olmo2_sink.py                  # in-engine sink target
+SINK=$ROOT/training/deploy/target/olmo2_sink.py                  # in-engine sink target
 LOADER=$HERE/patches/loader.py                          # patched flash_rl loader
 LOADER_DST=$SGL/srt/model_loader/loader.py
 MCFG=$HERE/patches/model_config.py                      # SWA-pool patch (enables the hybrid SWA KV pool for olmo3)

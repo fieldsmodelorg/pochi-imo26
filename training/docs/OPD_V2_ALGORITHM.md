@@ -58,7 +58,7 @@ rank/bundle which proofs get refined. The training signal is purely the JSD to t
 
 **Persistence:** append-only JSONL — `seed.jsonl` (immutable cold-start, DeepSeek `r3_hard2000`) +
 `artifacts.jsonl` (student appends). Replayed on load → resume-safe. Cold-start seed:
-`ycchen/dsflash-proof-distill-v2-test`.
+`ycchen/dsflash-proof-distill-v2-test`, now served from the public mirror `chankhavu/ycchen-dsflash-proof-distill-v2-test`.
 
 ## 3. How a rollout works — the `produce_sample` atom
 

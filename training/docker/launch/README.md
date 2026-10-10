@@ -7,6 +7,8 @@ launch order, health gate). Baked into the image at `/opt/opd/launch/`.
 |---|---|
 | `opd_v2.sbatch` | **8-node slurm job, Docker image via pyxis/enroot.** Sources a preset, then runs `run_mn_cu128.sh` with every step wrapped in the container. |
 | `run_mn_cu128.sh` | multi-node slurm launcher (her V33 topology). Runs on the batch host; `SRUN_CONTAINER_ARGS` (set by the sbatch) puts each srun step in the image. |
+| `launch_ssh.sh` | **no scheduler**: starts the image on every host of a hostfile over ssh + docker, each running `run_mn_nodes.sh`. |
+| `run_mn_nodes.sh` | per-node launcher: run the same script on every node with `NODE_RANK`/`NNODES`/`LAUNCH_ID`; each node runs only its role. Scheduler-free port of the launcher our B200 run used on Ai2's Beaker. |
 | `env_max_b200.sh` | **our 64× B200 run**: her V33 + 160k rollout (128k → 160k). B200/B300 only. Sources `env_v33.sh`. |
 | `env_v33.sh` | her V33 production config (128k) — the faithful reproduction. **H200 and B200.** |
 | `run_1node.sh` | single-node 8-GPU integration launcher (co-located, no srun). |
@@ -40,7 +42,8 @@ the one balance knob (`5` → 1+5+2, her pre-V33 fallback, if `perf/rollout_star
 **With pyxis/enroot** (Docker image on plain slurm):
 
 ```bash
-enroot import -o /shared/ycchen-opd+cu128.sqsh docker://chankhavu/ycchen-opd:cu128   # once
+enroot import -o /shared/ycchen-opd+cu128.sqsh \
+  'docker://chankhavu/ycchen-opd@sha256:908516a710f3f6c4157a92c0f9723ff862f84a9c3bf347601c6b2b9ca0ef1a25'   # once, pinned
 OPD_IMAGE=/shared/ycchen-opd+cu128.sqsh OPD_ENV=env_max_b200.sh \
 RUN_DIR=/shared/runs/opd_max_b200 JIT_CACHE_DIR=/shared/jit_cache \
 STUDENT_PATH=/shared/models/student-deploy DEEPSEEK_V4_FLASH=/shared/models/DeepSeek-V4-Flash \
@@ -50,6 +53,22 @@ sbatch training/docker/launch/opd_v2.sbatch          # OPD_ENV=env_v33.sh for H2
 
 The sbatch bind-mounts `RUN_DIR`, `JIT_CACHE_DIR` and the model dirs at the same paths inside the
 container (add more with `EXTRA_CONTAINER_MOUNTS`, extra pyxis flags with `EXTRA_CONTAINER_ARGS`).
+
+**Without a scheduler** (ssh + docker; hostfile lines in rank order: teacher, 4 rollout, 3 trainer):
+
+```bash
+OPD_IMAGE=chankhavu/ycchen-opd@sha256:908516a710f3f6c4157a92c0f9723ff862f84a9c3bf347601c6b2b9ca0ef1a25 \
+OPD_ENV=env_max_b200.sh RUN_DIR=/shared/runs/opd_max_b200 JIT_CACHE_DIR=/shared/jit_cache \
+STUDENT_PATH=/shared/models/student-deploy DEEPSEEK_V4_FLASH=/shared/models/DeepSeek-V4-Flash \
+bash training/docker/launch/launch_ssh.sh hosts.txt          # ... hosts.txt stop  to tear down
+```
+
+Each node publishes its hostname to `RUN_DIR` and waits for the others (the rank → host list `scontrol` gives
+on slurm). Teardown uses per-launch sentinels in `RUN_DIR`: the head writes `STOP_<id>` when the orchestrator
+exits, and a node whose server or trainer dies writes `FAILED_<id>_rank<r>`, which stops every other node and the
+orchestrator. Sentinels are keyed by the launch, so relaunching into the same `RUN_DIR` (resume) is safe.
+With your own scheduler, run `run_mn_nodes.sh` inside the image on every node with `NODE_RANK`, `NNODES`, a shared
+`LAUNCH_ID` and `RUN_DIR` set (plus `NODE_HOST` if `hostname -f` isn't the name peers should use).
 
 **Already inside the image** (an allocation whose steps run in the container):
 
@@ -79,7 +98,7 @@ bash   /opt/opd/launch/run_mn_cu128.sh
 - **First-run seeding:** the orchestrator auto-seeds the pool from the public `SEED_SOURCE` at startup
   (no `HF_TOKEN` needed), so the **head node needs network egress**. To skip that, pre-seed once on a
   connected box: `python -m opd_v2.agentic.seed --run-dir $RUN_DIR`.
-- **Resume:** presets set `RESUME=0` (fresh run). After a requeue set `RESUME=1` with the same `RUN_NAME`
+- **Resume:** presets default to `RESUME=0` (fresh run). After a requeue set `RESUME=1` with the same `RUN_NAME`
   / `RUN_DIR` (pool + DCP checkpoints persist).
 
 ## Single-node integration test (8× H200, 4:2:2)

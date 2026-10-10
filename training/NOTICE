@@ -1,0 +1,18 @@
+FM-Pochi-32B training code (training/)
+Copyright 2026 proof-pilot contributors
+
+The training pipeline in this directory (tokenizer transplant, olmo3_sink, stage-1 SFT, soft distillation,
+teacher hidden-state extraction, OPD v2, DFlash draft training, deploy conversion) was written by
+Yi-Chia Chen and the proof-pilot contributors, and is distributed under the Apache License 2.0 (see LICENSE).
+The CUDA 12.8 / H200+B200 container, launchers and port into this repository are by the FM-Pochi authors,
+under the same license.
+
+This directory includes or patches third-party code, which keeps its own license:
+- SGLang (Apache-2.0, SGLang Team) and vLLM (Apache-2.0, vLLM project): modified source files in
+  docker/opd_serve/sglang_patches/, the anchored source patchers in teacher_extract/ and
+  opd_v2/flash_rl/patches/, and deploy/target/olmo2_sink.py. Original copyright headers are preserved.
+- FlashAttention (BSD-3-Clause, Tri Dao): olmo3_sink/fa3_attention_sink.patch is a patch against its
+  hopper/ sources; olmo3_sink_fa2.py calls the stock flash-attn-2 kernels.
+- Liger Kernel (BSD-2-Clause): used, not vendored (olmo3_sink/liger.py integrates it).
+- Hugging Face Transformers (Apache-2.0): olmo3_sink/modeling_olmo3_sink.py subclasses its OLMo 3 classes.
+- DeepSeek-V4 (MIT): train_core/encoding_dsv4.py is DeepSeek's published V4 chat encoding, vendored.

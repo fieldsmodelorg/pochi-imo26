@@ -13,5 +13,5 @@ modules that OPD v2's agentic producer imports are kept (`opd_v2/agentic/{roles,
 
 The generation pipeline itself (`pipeline.py`, `run.py`, `gen_refsel.py`, `select_hard.py`, `make_report.py`)
 and its problem parquets are not included: they drive LLM backends to build the distillation data, not
-training. The resulting data is on HF (`ycchen/dsflash-proof-distill-v2-test`, mirrored at
-`chankhavu/ycchen-dsflash-proof-distill-v2-test`), which is what OPD seeds from.
+training. The resulting data is on HF at `chankhavu/ycchen-dsflash-proof-distill-v2-test` (a mirror of
+`ycchen/dsflash-proof-distill-v2-test`, which is no longer public), which is what OPD seeds from.

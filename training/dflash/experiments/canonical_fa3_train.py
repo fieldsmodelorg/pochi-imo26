@@ -40,7 +40,7 @@ import torch.nn as nn
 HERE = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
-sys.path.insert(0, os.path.abspath(os.path.join(HERE, "../..")))
+sys.path.append(os.path.abspath(os.path.join(HERE, "../..")))   # training/ (olmo3_sink); last so dflash.py wins over the dflash/ package
 
 from nodup_fa3_train import (  # noqa: E402
     NoDupFA3Draft,
