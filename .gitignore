@@ -220,3 +220,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# training/: keep the out-of-band binary drop dirs (their own .gitignore excludes the binaries) and the
+# stage1_v2 container manifest, which the generic rules above would otherwise hide
+!training/docker/wheels/
+!training/docker/opd_serve/wheels/
+!training/stage1_v2/pkg.manifest

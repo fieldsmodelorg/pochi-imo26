@@ -1,0 +1,35 @@
+# pkg.manifest -- container payload for stage1_v2 (FMI train variant).
+# Format: <repo-root-relative source> -> <build/-relative dest>. '#' lines are comments.
+# `make_pkg.py --write` materializes build/ from this list (+ PROVENANCE.json);
+# `make_pkg.py --check` verifies build/ still matches the sources (fail loud).
+#
+# Single source of truth: every shared module is listed from its CANONICAL top-level
+# home. The only hand-edited files under stage1_v2/ that ship are src/train.py,
+# src/data_mix.py and mix_g2.json (-> /app/mix_default.json).
+
+# --- /app: olmo3_sink package (canonical: top-level olmo3_sink/, shipping modules only)
+training/olmo3_sink/__init__.py                      -> app/olmo3_sink/__init__.py
+training/olmo3_sink/attention.py                     -> app/olmo3_sink/attention.py
+training/olmo3_sink/configuration_olmo3_sink.py      -> app/olmo3_sink/configuration_olmo3_sink.py
+training/olmo3_sink/fa3_sink_kernel.py               -> app/olmo3_sink/fa3_sink_kernel.py
+training/olmo3_sink/liger.py                         -> app/olmo3_sink/liger.py
+training/olmo3_sink/modeling_olmo3_sink.py           -> app/olmo3_sink/modeling_olmo3_sink.py
+training/olmo3_sink/register.py                      -> app/olmo3_sink/register.py
+training/olmo3_sink/sft_data.py                      -> app/olmo3_sink/sft_data.py
+
+# --- /app: train_core package (canonical: top-level train_core/)
+training/train_core/__init__.py                      -> app/train_core/__init__.py
+training/train_core/encoding_dsv4.py                 -> app/train_core/encoding_dsv4.py
+training/train_core/l3_render.py                     -> app/train_core/l3_render.py
+
+# --- /app: stage entrypoint (stage1_v2's own code)
+training/stage1_v2/src/train.py             -> app/train.py
+training/stage1_v2/src/data_mix.py          -> app/data_mix.py
+training/stage1_v2/mix_g2.json              -> app/mix_default.json
+
+# --- /opt/fa3: patched FlashAttention-3 (patch canonical: top-level olmo3_sink/)
+training/olmo3_sink/fa3_attention_sink.patch         -> fa3/fa3_attention_sink.patch
+training/stage1_v2/fa3/build_fa3.sh         -> fa3/build_fa3.sh
+
+# --- /opt: pinned deps
+training/stage1_v2/requirements.txt         -> requirements.txt

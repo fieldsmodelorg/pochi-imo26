@@ -1,0 +1,14 @@
+{
+  "_comment": "Stage-1 v2 data mix (G2-r05, 2026-06-05). Entries match hive partitions <dataset>/<domain> under each --dataset_path root (matched by root basename). Unmatched partitions default to repeat=1. Fractional repeat = per-epoch deterministic shard subset (epoch-rotating so successive epochs cover the remainder). Schema reserves max_len/thinking_mode for the future long-context stage (unused here: global max_len 12288, thinking render).",
+  "entries": [
+    {"root": "nemotron-deepseek-sft-mix", "include": "*", "repeat": 0.5},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-math-v4/*", "repeat": 2},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-math-proofs-v2/*", "repeat": 2}
+  ],
+  "_expected": {
+    "total_eff_tok": "50.4B/epoch at max_len 12288 (census 2026-06-05, outputs/mix_census_v{1,2}.json)",
+    "v1_v2_token_ratio": [0.745, 0.255],
+    "generator": {"DeepSeek-V3.2-Speciale": 0.421, "DeepSeek-V3.2": 0.356, "DeepSeek-V4-Pro": 0.223},
+    "category": {"math_cot": 0.414, "math_tir": 0.317, "proof": 0.094, "agent": 0.092, "science": 0.055, "verify": 0.028}
+  }
+}

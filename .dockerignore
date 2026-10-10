@@ -10,3 +10,6 @@ submission_artifacts
 submission.csv
 models
 *.ipynb
+
+# OPD training tree has its own image (training/docker/Dockerfile.ycchen-opd)
+training

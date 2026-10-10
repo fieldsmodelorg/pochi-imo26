@@ -1,0 +1,48 @@
+{
+  "architectures": ["Olmo3DFlashDraftModel"],
+  "model_type": "olmo3",
+  "hidden_size": 4096,
+  "intermediate_size": 11008,
+  "num_hidden_layers": 8,
+  "num_attention_heads": 32,
+  "num_key_value_heads": 8,
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "rms_norm_eps": 1e-06,
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "vocab_size": 129280,
+  "max_position_embeddings": 65536,
+  "layer_types": [
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention",
+    "sliding_attention"
+  ],
+  "sliding_window": 512,
+  "rope_parameters": {
+    "attention_factor": 1.2079441541679836,
+    "beta_fast": 32.0,
+    "beta_slow": 1.0,
+    "factor": 8.0,
+    "original_max_position_embeddings": 8192,
+    "rope_theta": 500000,
+    "rope_type": "yarn"
+  },
+  "block_size": 10,
+  "num_target_layers": 32,
+  "target_hidden_size": 4096,
+  "pad_token_id": 2,
+  "bos_token_id": 0,
+  "eos_token_id": 1,
+  "tie_word_embeddings": false,
+  "dflash_config": {
+    "mask_token_id": 128000,
+    "target_layer_ids": [1, 5, 9, 13, 17, 21, 25, 29],
+    "use_attention_sink": true
+  }
+}

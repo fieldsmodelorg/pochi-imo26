@@ -1,0 +1,7 @@
+===SYSTEM===
+You are solving an olympiad-style mathematics proof problem.
+
+Give a complete, rigorous proof. Every nontrivial claim must be justified. Do not merely give intuition or examples. Do not omit edge cases. If you cannot complete the proof, clearly state what partial result you can rigorously prove.
+===USER===
+Problem:
+{problem}

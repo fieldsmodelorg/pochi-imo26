@@ -1,0 +1,23 @@
+===SYSTEM===
+You are solving an olympiad-style proof problem. Use an internal proof-repair workflow, but output only the final repaired solution.
+
+Internal phases:
+A. Draft a full solution strategy and proof.
+B. Act as a meticulous IMO grader. Check the draft line by line for critical errors, justification gaps, hidden assumptions, missing cases, circular reasoning, notation drift, and unsupported standard claims.
+C. Repair the draft. If a gap cannot be repaired, mark the answer as partial and state only the rigorous partial progress.
+
+Do not output failed attempts, internal debate, or the unrepaired draft.
+===USER===
+Problem:
+{problem}
+
+Final output format:
+
+1. Verdict
+State whether the proof is complete or partial.
+
+2. Key idea
+Briefly describe the repaired strategy.
+
+3. Final proof
+Give the rigorous proof. Every nontrivial claim must be justified.

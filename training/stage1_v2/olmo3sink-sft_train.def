@@ -1,0 +1,74 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.9.1-cuda12.8-cudnn9-devel
+
+# Olmo3Sink stage-1 SFT, FMI train variant -- v2 (single-source layout).
+# NOTE(build): run `python make_pkg.py --write` IMMEDIATELY before `apptainer build`:
+# %files below copies ./build/, which is a packaging-time materialization of the
+# canonical top-level modules (olmo3_sink/, train_core/) listed in pkg.manifest.
+# build/PROVENANCE.json (git commit + per-file sha256) ships into /app for traceability.
+# NOTE(submission): FMI mandates the .def AND .sif share the name <pipeline>_train_<YYYYMMDD>
+# with YYYYMMDD = submission day.
+# `-devel` base is required: nvcc must be present to build patched FA3.
+
+%files
+    ./build/app/* /app/
+    ./build/PROVENANCE.json /app/PROVENANCE.json
+    ./build/fa3/fa3_attention_sink.patch /opt/fa3/fa3_attention_sink.patch
+    ./build/fa3/build_fa3.sh /opt/fa3/build_fa3.sh
+    ./build/requirements.txt /opt/requirements.txt
+
+%environment
+    export HF_HOME=/tmp/hf
+    export HUGGINGFACE_HUB_CACHE=/tmp/hf
+    export TORCHINDUCTOR_CACHE_DIR=/tmp/torchinductor
+    export TRITON_CACHE_DIR=/tmp/triton
+    export PYTHONPATH=/app:$PYTHONPATH
+    export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
+
+%post
+    apt-get update && apt-get install -y --no-install-recommends git build-essential
+    pip install --no-cache-dir -r /opt/requirements.txt
+    bash /opt/fa3/build_fa3.sh          # patched FlashAttention-3 (in-kernel sink), sm90
+    mkdir -p /app
+
+%test
+    # smoke: package + FA3 + olmo3_sink + train_core import (no weights needed)
+    python -c "import flash_attn_interface; import olmo3_sink; from train_core.l3_render import render_and_mask; print('imports OK')"
+
+%runscript
+    # FMI invokes this ONCE: `singularity run img.sif --model_path ... --dataset_path ...
+    #   --output_path ... --logdir ...`. For SINGLE-NODE multi-GPU we launch one process per
+    # GPU ourselves (FMI does not run torchrun): train.py reads RANK/WORLD_SIZE/LOCAL_RANK
+    # from the standard torch elastic env and does FSDP2 full-shard. We use
+    # `python -m torch.distributed.run` (NOT the `torchrun` console script, whose name can be
+    # shadowed on PATH by a host bind-mount). GPU count: --num_gpus if given, else
+    # CUDA_VISIBLE_DEVICES, else all visible devices.
+    #
+    # MULTI-NODE (e.g. 3x8 H200) is NOT wired here: it needs a real rendezvous
+    # (MASTER_ADDR/MASTER_PORT/NNODES/NODE_RANK) that depends on how FMI launches across
+    # nodes -- confirm with FMI, then set --rdzv-endpoint/--nnodes/--node-rank below. The
+    # train.py code path (HSDP 2-D mesh) is already implemented and only needs the launcher.
+    NPROC="$(python - "$@" <<'PY'
+import os, sys
+n = None
+a = sys.argv[1:]
+for i, x in enumerate(a):
+    if x == "--num_gpus" and i + 1 < len(a):
+        n = int(a[i + 1])
+    elif x.startswith("--num_gpus="):
+        n = int(x.split("=", 1)[1])
+if n is None:
+    cvd = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if cvd:
+        n = len([d for d in cvd.split(",") if d != ""])
+if n is None:
+    try:
+        import torch
+        n = torch.cuda.device_count()
+    except Exception:
+        n = 1
+print(max(1, n))
+PY
+)"
+    echo "[runscript] single-node launch: nproc_per_node=$NPROC"
+    exec python -m torch.distributed.run --standalone --nproc_per_node="$NPROC" /app/train.py "$@"

@@ -1,0 +1,25 @@
+# Stage-1 SFT container deps. torch + triton come from the base image
+# (pytorch/pytorch:2.9.1-cuda12.8-cudnn9-devel); patched FlashAttention-3 is built from
+# source in %post (see fa3/build_fa3.sh), NOT installed here.
+# PINNED to the exact versions of the validated build (2026-05-31: container %test PASS +
+# 2-GPU FSDP2 train / DCP checkpoint / resume verified). numpy/ninja are already in the base
+# image at these versions (the pins are no-ops there, kept for an exact record).
+#
+# transformers==5.9.0 has the OLMo3 per-layer RoPE regression (HF #39847: YaRN applied to
+# sliding layers too). olmo3_sink/modeling_olmo3_sink.py carries a per-layer override
+# mirroring the open fix PR HF #45945 -- do NOT bump this pin without re-checking whether
+# the upstream fix landed and the override must be retired (see README diary 2026-06-05).
+transformers==5.9.0
+accelerate==1.13.0
+datasets==4.8.5
+huggingface-hub==1.17.0
+tokenizers==0.22.2
+safetensors==0.7.0
+liger-kernel==0.8.0
+bitsandbytes==0.49.2
+pyarrow==24.0.0
+numpy==2.3.4
+loguru==0.7.3
+einops==0.8.2
+ninja==1.13.0
+psutil==7.2.2

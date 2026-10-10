@@ -1,0 +1,29 @@
+{
+  "_comment": "Long-context 256k anneal mix (2026-06-12). Per-doc position reset means only genuinely long docs exercise long positions, so this mix is proofs-v2-heavy (the only >128k source: proof p50 97.5k / p90 208k, finally seen un-truncated at max_len 262144) plus mid-length long sources and a small short/mid replay against forgetting. UNMATCHED PARTITIONS DEFAULT TO repeat=1, so everything not wanted is explicitly pinned to 0 (data_mix now allows repeat 0 = exclude). Target ~11B tok ~= 660 steps at 262144 x 64 GPU.",
+  "entries": [
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-math-proofs-v2/proof",             "repeat": 2},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-math-proofs-v2/verification",      "repeat": 1},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-math-proofs-v2/meta_verification", "repeat": 1},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-science-v2/vendor",            "repeat": 0.15},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-cascade-2/math_proof",             "repeat": 0.05},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-math-v3/aops_cot",                 "repeat": 0.04},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-cascade-2/math_notool",            "repeat": 0.02},
+
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-cascade-2/math_tool",              "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-cascade-2/swe_agentless",          "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-cascade-2/terminal_agent",         "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-math-v3/aops_tir",                 "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-math-v3/stackexchange_math_cot",   "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix",    "include": "nemotron-math-v3/stackexchange_math_tir",   "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-agentic-v2/*",                 "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-math-v4/*",                    "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-science-v2/rqa",               "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-science-v2/so",                "repeat": 0},
+    {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-sft-science-v2/syn_mcq",           "repeat": 0}
+  ],
+  "_expected": {
+    "rows": "~245k selected row-copies (proof 2x24.7k + verif 28.9k + meta 29.2k + science 33k + c2-proof 41k + aops 24k + notool 38.5k)",
+    "uncapped_tok": "~11.1B: proof 2x2.58 + verif 1.46 + meta 0.97 + science 1.33 + c2-proof 0.90 + aops 0.58 + notool 0.67",
+    "note": "max_len 262144 truncates only proof p99 tail (~1-2%)"
+  }
+}
