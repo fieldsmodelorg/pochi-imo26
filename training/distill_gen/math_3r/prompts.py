@@ -24,10 +24,6 @@ def _load(name: str) -> str:
     return (PROMPT_DIR / name).read_text()
 
 
-def fallback_preamble() -> str:
-    return _load("fallback.txt").strip()
-
-
 def to_messages(text: str) -> list[dict]:
     """Split a rendered ===SYSTEM===/===USER=== template into system+user messages."""
     if SYS_DELIM in text and USR_DELIM in text:

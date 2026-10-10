@@ -133,7 +133,7 @@ from olmo3_sink import register_olmo3_sink
 register_olmo3_sink()
 sys.path.insert(0, f"{R}/training/distill_gen/math_3r")
 import prompts as m3r_prompts
-assert m3r_prompts.render_prover_prompt("x") and m3r_prompts.fallback_preamble()
+assert m3r_prompts.render_prover_prompt("x")
 print(f"build-sanity OK: transformers {transformers.__version__}, opd_v2.config + olmo3_sink registered")
 PY
 
