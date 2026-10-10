@@ -2,7 +2,7 @@
 # Launch an OPD student rollout server with FP8 quantization + working
 # update_weights_from_disk (repeated bf16 reload + re-quantize to fp8).
 #
-# This is run_rollout_service.sh + two extra knobs:
+# This is a plain sglang rollout launch + two extra knobs:
 #   --quantization fp8 --load-format flash_rl   (online fp8 + RL reload loader)
 # plus a bind-mount of the patched flash_rl loader (see patches/ + README.md).
 # Without the patch, `--quantization fp8` + update_weights_from_disk CRASHES
@@ -13,15 +13,15 @@
 # Tunables via env: SIF MODEL PORT TP MEMFRAC MAXRUN CUDA_GRAPH_MAX_BS CHUNKED_PREFILL CONTEXT_LEN
 #                   KV_CACHE_DTYPE SWA_RATIO   (long-context KV memory savings; see below)
 #   CUDA_GRAPH_MAX_BS defaults to MAXRUN: when conc(MAXRUN)>10 you **must** raise it too, otherwise the
-#   cuda graph only captures up to the default bs and larger batches fall back to eager and slow down
-#   (2026-06-20 KV-pool test: the graph only reached bs=10 = the default MAXRUN).
-# Validated: sglang 0.5.12.post1, H200.
-#   - TP=1 bf16-KV: original validation (10/10 reload bit-exact).
-#   - TP=4 + fp8-KV(e4m3) + SWA-ratio: long-context measurement (2026-06-17) — all three flags can be
-#     enabled together, update_weights_from_disk 6/6 success, reload->reload bit-exact, e4m3 keeps FA3. A TP8 head divides evenly and also works.
-#   - TP4 + fp8 + e4m3 + SWA r=0.2 + ctx131072 + memfrac0.85 (measured 2026-06-20): hybrid SWA pool enabled,
+#   cuda graph only captures up to the default bs and larger batches fall back to eager and slow down.
+# Tested configs (sglang 0.5.12.post1, H200):
+#   - TP=1 bf16-KV: 10/10 reloads bit-exact.
+#   - TP=4 + fp8-KV(e4m3) + SWA-ratio: all three flags can be enabled together, update_weights_from_disk
+#     6/6 success, reload->reload bit-exact, e4m3 keeps FA3. A TP8 head divides evenly and also works.
+#   - TP4 + fp8 + e4m3 + SWA r=0.2 + ctx131072 + memfrac0.85: hybrid SWA pool enabled,
 #     full_layer_tokens=4,711,012 / swa_layer_tokens=942,202 (115GB, avail 20.6GB) -> long sequences bind the full pool:
-#     conc*avg_len <= 4.71M (avg 64k -> ~72 per replica). OPD agentic sets MAXRUN=64 (see examples/run_agentic_mn_32b.sbatch).
+#     conc*avg_len <= 4.71M (avg 64k -> ~72 per replica; see README.md §5.4). OPD agentic sets MAXRUN=64
+#     (see examples/run_agentic_mn_32b.sbatch).
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
@@ -54,20 +54,20 @@ if [ "${SKIP_TOKENIZER_INIT:-0}" = "1" ]; then
 fi
 EXTRA_ARGS=()
 [ -n "${CONTEXT_LEN:-}" ] && EXTRA_ARGS+=(--context-length "$CONTEXT_LEN")
-# long-context KV memory savings (measured 2026-06-17):
+# long-context KV memory savings:
 #  - fp8 KV cache: use fp8_e4m3 (FA3 supports it, 3-bit mantissa is less lossy); fp8_e5m2 forces the attn backend down to triton.
 [ -n "${KV_CACHE_DTYPE:-}" ] && EXTRA_ARGS+=(--kv-cache-dtype "$KV_CACHE_DTYPE")
 #  - hybrid SWA memory pool: ratio of SWA-layer KV tokens / full-layer KV tokens (olmo3 = 24 SWA : 8 full, window 4096).
 [ -n "${SWA_RATIO:-}" ] && EXTRA_ARGS+=(--swa-full-tokens-ratio "$SWA_RATIO")
 #  - TP>1 + multiple replicas/node: custom all-reduce uses CUDA IPC handles; two TP-groups on the same node
-#    hit `custom_all_reduce.cuh: CUDA error: invalid argument` under cuda-graph capture (2026-06-20 job131796
-#    real crash; a single replica can't reproduce it locally) -> fall back to NCCL all-reduce (7B TP4 decode
+#    hit `custom_all_reduce.cuh: CUDA error: invalid argument` under cuda-graph capture (a single replica
+#    can't reproduce it) -> fall back to NCCL all-reduce (7B TP4 decode
 #    all-reduce is small, goes over NVLink, throughput impact negligible).
 [ "${TP:-1}" -gt 1 ] && EXTRA_ARGS+=(--disable-custom-all-reduce)
 
 # NOTE on memory: each reload needs transient scratch for the bf16->fp8
 # re-quant. fp8 frees ~6GB of weights vs bf16; keep mem-fraction-static at a
-# level that leaves headroom for the reload. 0.85 validated OK for 7B/TP1.
+# level that leaves headroom for the reload. 0.85 works for 7B/TP1.
 exec apptainer exec --nv \
   --bind /work \
   --bind "$SINK:$SGL/srt/models/olmo2.py" \

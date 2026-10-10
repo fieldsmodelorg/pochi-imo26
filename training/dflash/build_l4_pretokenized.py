@@ -8,8 +8,7 @@ FFD pack into `proof-pilot-l4-v1` bins that `training/dflash/data.py` reads:
   1. OPD rollout parquet (`opd_v2 rollout_store`): columns
      `input_ids: list<int32>`, `loss_mask: list<bool>`, `meta: str(JSON)`.
      Rows whose `meta.finish_reason` is in --drop-finish-reasons are dropped
-     (default "length": cap-truncated / degenerate-loop rollouts — see
-     opd_v2 DEEP_REVIEW_32B.md finding B3; their loss_mask is all-True over the
+     (default "length": cap-truncated / degenerate-loop rollouts; their loss_mask is all-True over the
      truncated/looping completion and would teach the draft a bad distribution).
   2. dsflash teacher manifest (`teacher_extract/dataprep render_manifest`): columns
      `input_ids: list<int32>`, `prompt_len`, `seq_len`. loss_mask is constructed

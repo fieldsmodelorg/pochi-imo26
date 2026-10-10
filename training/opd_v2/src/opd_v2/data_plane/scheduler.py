@@ -1,12 +1,12 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""keep-N-in-flight scheduler + backpressure (PLAN §5.3).
+"""keep-N-in-flight scheduler + backpressure.
 
 Keeps ~`target_inflight` atoms in flight; as each finishes it is collected into the buffer; when the buffer
 is `near_full` it stops issuing new atoms (backpressure). Each prompt fans out into `n_samples` independent
-atoms (V1). Pure asyncio worker-pool, no blocking threads (fixes v1 P5's 40~64 OS threads).
+atoms. Pure asyncio worker-pool, no blocking threads (no OS threads).
 
 GC hangs off here: when the buffer is full and evicts an old traj, the scheduler unlinks its hidden file
-immediately (overflow GC); stale-drop / post-batch-consumption GC happens on the orchestrator side (V14).
+immediately (overflow GC); stale-drop / post-batch-consumption GC happens on the orchestrator side.
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class Scheduler:
                         continue
                     evicted = self.buf.put(traj)           # if full, evicts the oldest
                     if evicted:
-                        self.store.delete_handles([e.handle for e in evicted])  # overflow GC (V14)
+                        self.store.delete_handles([e.handle for e in evicted])  # overflow GC
                     self.n_produced += 1
                     g = traj.gen_len
                     self._gen_sum += g

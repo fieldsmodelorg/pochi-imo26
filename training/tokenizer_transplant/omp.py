@@ -1,9 +1,7 @@
 """Core OMP routines for tokenizer-embedding transplantation.
 
-Model- and path-agnostic. The numerics here are the audited, verified version
-from the original ``omp_transplant.py`` (centered-OMP / cosine selection /
-normal-equation least squares with adaptive ridge) — kept byte-for-byte so the
-held-out reconstruction fidelity is unchanged. See ``../docs/tokenizer/transplant.md``.
+Model- and path-agnostic. Centered OMP with cosine selection and normal-equation
+least squares with adaptive ridge.
 """
 
 from __future__ import annotations
@@ -12,11 +10,7 @@ import torch
 
 
 def resolve_device(device: str | None = None) -> str:
-    """Pick a device: explicit override, else cuda if available, else cpu.
-
-    The original script hardcoded ``cuda`` and silently failed on CPU-only
-    login nodes; auto-detection avoids that.
-    """
+    """Pick a device: explicit override, else cuda if available, else cpu."""
     if device:
         return device
     return "cuda" if torch.cuda.is_available() else "cpu"
@@ -43,7 +37,7 @@ def batch_omp(
     """
     N = targets.shape[0]
     atoms = atoms.to(device, torch.float32)
-    # canonical OMP (mergekit/paper) selects on RAW inner product; my variant used unit-norm atoms
+    # cosine (unit-norm) selection by default; raw_select=True for canonical OMP (mergekit/paper)
     sel_atoms = atoms if raw_select else atoms / atoms.norm(dim=1, keepdim=True).clamp_min(1e-12)
     anorm = sel_atoms
     out_idx = torch.zeros(N, k, dtype=torch.long)

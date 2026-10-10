@@ -29,8 +29,7 @@ The only differences from her scripts are the container substitutions: `apptaine
 
 Nothing else is set per GPU: `run_teacher.sh` picks the MoE backend from the compute capability
 (sm_100 → `flashinfer_mxfp4`, else `auto` → marlin) and the JIT cache is scoped per arch.
-Validation status: the B200 path (image, all three roles, `env_max_b200.sh` sizing) was brought up on B200;
-`env_v33.sh` on 8× H200 *with this image* has not been run end to end (her V33 ran on H200 with her cu13 stack).
+Her V33 ran on 8× H200 with her cu13 stack; the B200 run used this image with `env_max_b200.sh`.
 
 ## Multi-node (8 nodes × 8 GPU)
 

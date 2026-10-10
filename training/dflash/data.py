@@ -138,16 +138,10 @@ def epoch_resumable_iter(loader):
 
     The sampler's ``.skip`` (set by ``build_resumable_dataloader`` to
     ``start_step - 1`` = per-rank bins already consumed) is read as a *global*
-    consumed count and mapped onto an epoch + within-epoch offset. This fixes two
-    bugs in the old ``set_epoch(0)`` + ``while True: yield from dl`` loop that
-    only set the epoch once and never reset ``.skip``:
-
-    1. every epoch replayed the *same* permutation (no reshuffle) -> verbatim
-       data repetition on multi-epoch runs (e.g. the 65k-ctx OPD build is only
-       ~556 bins/rank, so a 4000-step run wrapped it ~7x in identical order);
-    2. resuming past one epoch left ``order[skip:]`` empty (``skip >= per_rank``)
-       -> the generator spun forever yielding nothing = a silent training hang on
-       any requeue after the first epoch.
+    consumed count and mapped onto an epoch + within-epoch offset. Reshuffles
+    every epoch (no verbatim repetition on multi-epoch runs over small builds), and
+    a resume past one epoch maps the skip onto ``(epoch, offset)`` instead of
+    leaving ``order[skip:]`` empty and yielding nothing.
 
     NOT ``itertools.cycle``: cycle caches every yielded (pinned) bin -> tens of
     GiB of page-locked host RAM over a long run.

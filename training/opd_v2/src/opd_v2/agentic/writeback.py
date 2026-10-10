@@ -1,9 +1,9 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """PoolIngestor — rollout -> decode(answer-only) -> parse -> validity-gate -> pool.admit (write-back).
 
-Design (PLAN agentic section, mirrors rollout_store's non-blocking writer + produce.py's dump hook):
+Design (mirrors rollout_store's non-blocking writer + produce.py's dump hook):
 - **gate**: every generation is a training sample (teacher /score runs as usual); **only parse-passing
-  artifacts are written into the pool** as downstream context (the user's rule). Truncated
+  artifacts are written into the pool** as downstream context. Truncated
   (finish_reason=="length") -> not entered into the pool (but still trained on, still dumped by rollout_store).
 - **Two extractions**: the training sample = the full continuation (with think, handled by the trainer);
   the **pool artifact = only the parsed answer (<solution>/<score>...), think discarded** — the downstream

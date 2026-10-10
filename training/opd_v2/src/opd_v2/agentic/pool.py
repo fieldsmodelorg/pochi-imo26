@@ -5,7 +5,7 @@ graph: `problem → proofs → verifies`, `problem → refined`. select stores *
 consumes its output, it's just a training sample) -> it only increments a counter. Each node carries
 provenance (id/wv/source/step) for later tracking of vintage and on-policy share.
 
-Design (PLAN agentic section):
+Design:
 - **The index is the in-memory truth** (`dict[problem_id → ProblemNode]`); the sampler reads and admit
   writes, **both on the orchestrator's single event loop** -> lock-free (same reasoning as buffer.py).
   This module **does not touch the tokenizer / parsing** (that's in writeback.py); admit_* receives
@@ -321,7 +321,7 @@ class PoolStore:
 
     # ---- counts ----
     def student_counts(self) -> dict:
-        """O(1): incrementally maintained (updated on admit/_apply_record) -> next_prompt need not scan the whole pool each time (P1)."""
+        """O(1): incrementally maintained (updated on admit/_apply_record) -> next_prompt need not scan the whole pool each time."""
         return dict(self._sc)
 
     def stats(self) -> dict:

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Production all-SWA no-dup FA3 DFlash trainer (multi-node, requeue-safe).
 
-Reuses the validated model/loss code from ``experiments/nodup_fa3_train.py``
-bit-for-bit (imported, not copied) and adds what the experiments trainer lacks
+Reuses the model/loss code from ``nodup_fa3_train.py`` bit-for-bit (imported,
+not copied) and adds what that trainer lacks
 for long unattended multi-node runs:
 
   * periodic atomic checkpoint (latest.pt: bf16 model + full AdamW state +
@@ -367,7 +367,7 @@ def main():
     if rank == 0:
         with open(os.path.join(args.output_dir, "run_config.json"), "w") as f:
             json.dump(vars(args), f, indent=2, sort_keys=True)
-        # Keep the self-contained modeling code next to the result for audit.
+        # Keep the self-contained modeling code next to the result for reproducibility.
         shutil.copy(__file__, os.path.join(args.output_dir, "nodup_fa3_train_prod.py"))
         shutil.copy(
             os.path.join(HERE, "nodup_fa3_train.py"),

@@ -1,8 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """had+int6_blk32 codec for stored teacher hidden states (V4-Flash 4096 / V4-Pro 7168).
 
-Storage format chosen by training/teacher_extract/_quant_study2.py (Flash) and
-re-validated for Pro by _quant_study_pro.py: randomized orthonormal rotation
+Storage format chosen by an offline quantization study (Flash, then Pro):
+randomized orthonormal rotation
 (gaussianizes outliers) + symmetric int6 with one fp16 scale per 32-dim block.
 0.406x of bf16; reconstructed-logit KL = 1/7 (Flash) / 1/14 (Pro) of the teacher
 engine's own rerun nondeterminism, with no measurable distribution bias.
@@ -13,7 +13,7 @@ Rotation by hidden dim d:
   - otherwise (Pro 7168 = 7*1024): no Sylvester Hadamard exists; use the
     Kronecker rotation M = kron(Q_m, H_p) with p the largest power-of-two
     factor and Q_m a seeded random orthogonal (float64 QR, det-sign fixed) —
-    exactly _quant_study_pro.KronRotator, so the validated numbers carry over.
+    a seeded Kronecker rotator (draw order Q then D).
 
 The rotation is free at training time: fold it into the teacher head once,
     W_rot = (W * D) @ M.T          # [V, H], one-time (M = Hn for Sylvester)
@@ -64,7 +64,7 @@ class Rotator:
             Q = (Q * torch.sign(torch.diagonal(R))).float().contiguous()
             self.Hn = None
             self.M = torch.kron(Q, _sylvester(p, "cpu").contiguous()).to(device)
-            # draw order matches _quant_study_pro.KronRotator: Q first, then D
+            # draw order: Q first, then D
             self.D = (torch.randint(0, 2, (d,), generator=g) * 2 - 1).float().to(device)
 
     def to(self, device):

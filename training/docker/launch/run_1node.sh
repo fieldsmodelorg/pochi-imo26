@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OPD v2 single-node (8-GPU) integration launcher — the final smoke before the 64x B200 run.
+# OPD v2 single-node (8-GPU) integration launcher.
 #
 # Same 4-process loop and launch ORDER as run_mn.sh (teacher -> rollout -> health gate ->
 # make_config -> trainer -> orchestrator), but co-located on ONE node via CUDA_VISIBLE_DEVICES

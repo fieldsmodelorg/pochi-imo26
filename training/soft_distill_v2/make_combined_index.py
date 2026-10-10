@@ -2,7 +2,7 @@
 """Concatenate several teacher-hidden pools into one combined index for multi-pool training.
 
 Each pool's `hidden/index.jsonl` references its per-doc `.pt` by ABSOLUTE path and carries
-the same codec/teacher/dim, so pools are mixable by plain concatenation (EXTRACT doc §5). The
+the same codec/teacher/dim, so pools are mixable by plain concatenation. The
 only fixup is `row_idx`: each pool numbers from 0, so we renumber globally. Every `.pt` path is
 verified to exist (fail loud on a missing shard).
 

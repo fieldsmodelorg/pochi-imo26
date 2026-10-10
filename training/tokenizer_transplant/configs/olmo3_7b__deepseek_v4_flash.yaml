@@ -1,5 +1,5 @@
 # Olmo-3-1025-7B base, DeepSeek-V4-Flash tokenizer (vocab 100,278 -> 129,280).
-# Verified centered-OMP transplant; see ../MODEL_CARD.md and ../../docs/tokenizer_transplant.md.
+# Centered-OMP transplant; see ../MODEL_CARD.md.
 base:            /models/Olmo-3-1025-7B
 donor_weights:   /models/DeepSeek-V4-Flash-donor   # only embed/head shards needed
 donor_tokenizer: deepseek-ai/DeepSeek-V4-Flash

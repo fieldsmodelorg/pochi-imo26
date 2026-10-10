@@ -11,13 +11,8 @@
 #SBATCH --output=training/opd_v2/runs/agentic_32b_lc140k_v33/slurm_%j.out
 #
 # Agentic semi-on-policy OPD -- 32B student (stage1-v2-32b-softdistill-v2test).
-# 64 GPU / 8 nodes: 1 teacher + 4 rollout + 3 trainer (V33 rebalance). 140k long-CoT +
-# SWA + fp8-KV, conc 64/replica.
-# vs the 7B run: student=32B, ctx 131k->140k, gen->128k, teacher ctx->150k,
-#   rollout gen timeout 3600->6000, MICRO 200k->148k (>=max_traj to avoid lpt drop +
-#   fit 32B memory).
-# V33: fast sharded save_weights + cap-hit admission filter (DROP_FINISH_REASONS) +
-# topology rebalance (4 rollout / 3 trainer).
+# 64 GPU / 8 nodes: 1 teacher + 4 rollout + 3 trainer. 140k long-CoT + SWA + fp8-KV,
+# conc 64/replica. Uses sharded save_weights + DROP_FINISH_REASONS admission filter.
 #
 #   sbatch training/opd_v2/examples/run_agentic_mn_32b.sbatch   # submit from repo root
 #   (the --output dir must exist before submission: mkdir -p training/opd_v2/runs/agentic_32b_lc140k_v33)
@@ -56,8 +51,7 @@ export ROLLOUT_MODEL=$REPO/outputs/stage1-v2-32b-softdistill-v2test-deploy
 export STUDENT_DEPLOY_PATH=$REPO/outputs/stage1-v2-32b-softdistill-v2test-deploy
 
 # ---- topology: 1 teacher(2xTP4) + 4 rollout(2xTP4 fp8 = 8 replicas) + 3 trainer(world=24, HSDP 3x8) ----
-#   V33 rebalance: trainer 2->3 (bottleneck was the trainer: starved_frac~0.5%, teacher
-#   idle), rollout 5->4 (had headroom).
+#   The trainer is the bottleneck at 2 nodes (teacher idle); rollout has headroom at 4.
 #   Note: faster trainer + fewer rollouts + dropping cap-hits can flip the run to
 #   rollout-bound; watch starved_frac at startup and go back to 5 rollout / 2 trainer
 #   if it spikes.
@@ -85,10 +79,10 @@ export MAX_NEW_TOKENS=128000        # generation cap 128k (produce clamps to max
 export ROLLOUT_GEN_TIMEOUT=6000     # per-rollout aiohttp timeout; long CoT must not be cut mid-generation
 export TARGET_INFLIGHT=512          # keep-N-in-flight ~= 8 replicas x 64
 export STARVE_TIMEOUT=7200          # > gen timeout 6000 (otherwise all-slots-long looks like a stuck producer)
-export DROP_FINISH_REASONS=length   # V33: window-truncated rollouts (incl. degenerate loops, ~5.7%) never enter training -> break self-amplification
+export DROP_FINISH_REASONS=length   # window-truncated rollouts (incl. degenerate loops, ~5.7%) never enter training -> break self-amplification
 
 # ---- trainer (32B @140k -> CPU offload; HSDP) ----
-export MICRO=131072                 # = the validated soft_distill_v2 32B micro-len. MUST be >= MAX_TRAJ_TOKENS (130816).
+export MICRO=131072                 # = the soft_distill_v2 32B micro-len. MUST be >= MAX_TRAJ_TOKENS (130816).
 export CHUNK_SIZE=2048              # JSD chunk = the soft_distill 32B value (opd_v2 default 4096 uses more memory; saves ~2GB)
 #   memory note: HID_DIM=4096 -> opd_v2 carries teacher_hidden+w_rot ~2GB more than
 #   soft_distill; chunk 2048 roughly cancels it -> 131072 sits at the soft_distill

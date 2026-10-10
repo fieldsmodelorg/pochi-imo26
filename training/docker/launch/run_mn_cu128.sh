@@ -28,7 +28,7 @@ read -r -a CTR <<< "${SRUN_CONTAINER_ARGS:-}"                # opt-in pyxis wrap
 HOLDER=${SLURM_JOB_ID:?must run inside a slurm allocation}
 TAG=${TAG:-opd_v2_$HOLDER}
 RUN_NAME=${RUN_NAME:-$TAG}
-RUN_DIR=${RUN_DIR:-$OPD_V2/runs/$RUN_NAME}          # must be on a shared FS (Weka/Beaker mount)
+RUN_DIR=${RUN_DIR:-$OPD_V2/runs/$RUN_NAME}          # must be on a shared FS
 mkdir -p "$RUN_DIR"
 MAIN="$RUN_DIR/launch.log"
 echo ">>> OPD v2 cu128 mn launch tag=$TAG run_dir=$RUN_DIR $(date)" | tee "$MAIN"

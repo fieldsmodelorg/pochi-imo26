@@ -30,7 +30,7 @@ fi
 
 # --- persistent JIT compile cache (opt-in) -----------------------------------------------------------
 # DeepGEMM/flashinfer/sglang/tvm-ffi JIT-compile kernels PER GEMM shape. Set JIT_CACHE_DIR to a durable
-# shared-FS path (e.g. a Beaker Weka mount) and the compile caches persist across runs + instances ->
+# durable shared-FS path and the compile caches persist across runs + instances ->
 # warm start, no recompile. Unset -> default ~/.cache (behaviour unchanged). Arch-scoped (sm_90a H200 vs
 # sm_100 B200 never collide) + role-scoped (all rollout replicas share one cache -> compile once for the
 # fleet). Redirect via symlink so it works regardless of each lib's env-var support.
@@ -46,7 +46,7 @@ if [ -n "${JIT_CACHE_DIR:-}" ]; then
   done
   mkdir -p "$_jc/inductor"
   # Seed from the image's baked warm cache (sm_100, TP): compile cubins + any bundled autotune. cp -rn = never
-  # clobber a warmer/newer entry -> persistent Weka cache untouched, a FRESH one skips the cold compile.
+  # clobber a warmer/newer entry -> persistent cache untouched, a FRESH one skips the cold compile.
   # Two switches, BOTH ON by default (mirror run_teacher.sh):
   #   JIT_CACHE_SEED=0    -> seed nothing         JIT_AUTOTUNE_SEED=0 -> compile only, drop the seed's autotune
   _seed="${OPD_JIT_CACHE_SEED:-/opt/opd/jit-cache-seed}/sm${_ccap:-x}/rollout"

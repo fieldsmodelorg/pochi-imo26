@@ -1,9 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """codec for quantized teacher hidden — forwards to `_common/hidden_codec` (had+int6_blk32, 3328 B/tok).
 
-Follows v1 `opd/src/opd/codec.py` (validated in G2/G3): on the teacher side `encode()` compresses the
-post-norm last-hidden `[L,4096]` into had+int6; on the trainer side `decode()` returns hidden in **rotated
-space**, paired with the pre-folded teacher head `W_rot` (`build_w_rot()`), such that
+On the teacher side `encode()` compresses the post-norm last-hidden `[L,4096]` into had+int6; on the
+trainer side `decode()` returns hidden in **rotated space**, paired with the pre-folded teacher head `W_rot` (`build_w_rot()`), such that
 `decode(packed) @ W_rotᵀ == h @ Wᵀ` (up to int6 noise). The rotation never runs an inverse on the hot path.
 """
 from __future__ import annotations

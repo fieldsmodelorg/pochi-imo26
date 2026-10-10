@@ -382,7 +382,7 @@ def test_cce_vs_full_ce():
 
 def test_save_load_roundtrip():
     """save_pretrained -> from_pretrained must be value-exact for EVERY param.
-    (Catches the tf5 _init_weights re-randomization class of bug.)"""
+    (Guards against tf5 _init_weights re-randomizing loaded params.)"""
     import tempfile
     torch.manual_seed(7)
     cfg = tiny_draft_config()

@@ -176,8 +176,8 @@ def main() -> int:
     ap.add_argument("--weight-decay", type=float, default=0.0)
     ap.add_argument("--grad-clip", type=float, default=1.0)
     ap.add_argument("--chunk-size", type=int, default=4096)
-    # Loss weights. Default = canonical pure-soft forward-KL (see README §1 decision):
-    # hard=0 soft=1 beta=0. v1 used hard=soft=0.5; set both >0 to mix CE anchor.
+    # Loss weights. Default = canonical pure-soft forward-KL:
+    # hard=0 soft=1 beta=0. Set both >0 (e.g. hard=soft=0.5) to mix in a CE anchor.
     ap.add_argument("--hard-weight", type=float, default=0.0, help="CE weight on teacher tokens (0 = pure soft)")
     ap.add_argument("--soft-weight", type=float, default=1.0, help="soft JSD/KL weight")
     ap.add_argument("--beta", type=float, default=0.0, help="Liger JSD beta: 0=forward-KL, 0.5=JSD, 1=reverse-KL")

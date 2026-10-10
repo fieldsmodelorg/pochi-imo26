@@ -15,7 +15,7 @@
 # from the legacy rope_scaling; sglang needs the legacy form) — so STUDENT_PATH may equal ROLLOUT_MODEL.
 
 export PRODUCER=agentic
-export SEED_SOURCE=${SEED_SOURCE:-chankhavu/ycchen-dsflash-proof-distill-v2-test}   # OPD prompt dataset — byte-faithful, public mirror of ycchen/dsflash-proof-distill-v2-test (the original is no longer public)
+export SEED_SOURCE=${SEED_SOURCE:-chankhavu/ycchen-dsflash-proof-distill-v2-test}   # OPD prompt dataset — public mirror of ycchen/dsflash-proof-distill-v2-test (the original is no longer public)
 export SEED_HF_CONFIG=${SEED_HF_CONFIG:-per_problem}
 export ATTN_IMPL=olmo3_sink_fa2          # cu128 delta #1: post-correction sink on stock FA2 (B200 has no FA3; same kernel on H200)
 # (cu128 delta #2 is the rollout attention backend = triton, already the default in run_rollout.sh)
@@ -35,25 +35,20 @@ export TARGET_INFLIGHT=512 STARVE_TIMEOUT=7200 DROP_FINISH_REASONS=length
 
 # ---- teacher: score window > max_traj so it never length-fails ----
 export TEACHER_CONTEXT_LEN=150000 TEACHER_MEMFRAC=0.6 TEACHER_MAXRUN=16
-# B200 MoE backend (REQUIRED on sm_100 — validated 2026-07-13 on 4xB200 TP4, clean Euclid proof).
-# DeepSeek-V4-Flash stores its EXPERTS IN FP4 (only attn/router/dense are fp8). On Blackwell `auto`
-# mis-resolves to the fp8 triton MoE runner, which CRASHES ("Hidden size mismatch"); deep_gemm
-# (swiglu_limit/JIT-EP shape guard) and flashinfer_trtllm (format_is_bypassed) also fail — all are
-# fp8 expert runners vs fp4-packed weights (fp8 MoE for V4 is unsupported by design, sglang #25704/#23743).
-# flashinfer_mxfp4 is the fp4-NATIVE Blackwell path — SAME precision as her Hopper marlin fp4 experts,
-# NOT a downgrade. First launch does a one-time ~15min flashinfer fp4 autotune (looks frozen between
-# ~2:18 profiles — it's warming, not hung); persisted via JIT_CACHE_DIR. NVFP4 support (#25820) is
-# already in 0.5.14 — no sglang bump needed.
-# MoE backend is AUTO-DETECTED in run_teacher.sh (compute_cap major==10 = Blackwell sm_10x = B200/B300 ->
-# flashinfer_mxfp4; else auto -> marlin on Hopper). So this env does NOT set MOE_BACKEND, and a b300 wrapper
-# that sources this stays thin. Force a specific one with:  export MOE_BACKEND=<backend>
+# Teacher MoE backend: DeepSeek-V4-Flash stores its experts in fp4. On Blackwell sglang's `auto` picks an fp8
+# MoE runner, which fails on fp4-packed weights (fp8 MoE for V4 is unsupported, sglang #25704/#23743);
+# flashinfer_mxfp4 is the fp4-native Blackwell path, the same precision as marlin's fp4 experts on Hopper.
+# run_teacher.sh AUTO-DETECTS it (compute_cap 10.x -> flashinfer_mxfp4; else auto -> marlin), so this env does
+# NOT set MOE_BACKEND. Force one with:  export MOE_BACKEND=<backend>
+# On B200 the first launch runs a one-time ~15min flashinfer fp4 autotune (looks frozen between profiles; it is
+# warming, not hung), persisted via JIT_CACHE_DIR.
 #   export MAX_PREFILL_TOKENS=8192              # only if the FlashMLA mixed decode+prefill crash appears (#23743)
 #   add --disable-flashinfer-autotune to run_teacher.sh for a ~1-2min cold start (skips the tune; slightly slower kernels)
 
 # ---- trainer: 32B @140k -> CPU offload, HSDP ----
 export MICRO=131072 CHUNK_SIZE=2048 CPU_OFFLOAD=1 TRAIN_BATCH_TRAJS=64
 export BETA=1.0 LR=1e-5 WEIGHT_SYNC_EVERY=4 G4_EVERY=5 LOG_EVERY=1
-export CHECKPOINT_EVERY=25 CHECKPOINT_KEEP=2 HF_EXPORT=1 RESUME=${RESUME:-0}   # RESUME=1 to continue a requeued run; 25 (was her 50): more frequent durable ckpts; operational-only, no training-dynamics change
+export CHECKPOINT_EVERY=25 CHECKPOINT_KEEP=2 HF_EXPORT=1 RESUME=${RESUME:-0}   # RESUME=1 continues a requeued run; CHECKPOINT_EVERY 25 (her sbatch: 50) = checkpoint cadence only
 
 export RUN_NAME=${RUN_NAME:-agentic_32b_lc140k_v33}
 export MAX_STEPS=${MAX_STEPS:-100000}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# OPD v2 multi-node e2e (single slurm job, V24). Inside one allocation, lay out four
+# OPD v2 multi-node e2e (single slurm job). Inside one allocation, lay out four
 # processes with srun --overlap:
 #   teacher sglang(TP4 x K/node) | rollout sglang(fp8 TP1 x K/node) | trainer-as-service
 #   (single cross-node srun, torchrun world=8 x NTR) | orchestrator (head node, CPU process).
@@ -9,7 +9,7 @@
 #   TEACHER_NNODES (default 1) + ROLLOUT_NNODES (default 1) + the rest = trainer.
 #   TEACHERS_PER_NODE (default 2 x TP4), ROLLOUTS_PER_NODE (default 8 x TP1 fp8).
 # Medium: hidden states + weights both live on the shared FS (under run_dir) -> rollout/
-# trainer read them directly across nodes (P7 fix).
+# trainer read them directly across nodes.
 #
 # Launch order: teacher -> rollout -> health gate (teacher cold start + JIT can be slow)
 # -> make_config -> trainer -> orchestrator. An EXIT trap kills all server sruns.
@@ -144,7 +144,7 @@ RUN_DIR="$RUN_DIR" RUN_NAME="$RUN_NAME" ROLLOUT_URLS="$RURLS" TEACHER_URLS="$TUR
   "$VENV" "$HERE/make_config.py" 2>&1 | tee -a "$MAIN"
 [ -f "$RUN_DIR/config.json" ] || { echo "config.json not written; abort" | tee -a "$MAIN"; exit 1; }
 
-# ---- 5) trainer: single cross-node srun, torchrun c10d (NOT dual-srun; v1 IB-hang lesson) ----
+# ---- 5) trainer: single cross-node srun, torchrun c10d (NOT dual-srun: dual-srun hangs on IB) ----
 echo ">>> launch trainer (world=$((8*TRAINER_NNODES)) on $TRAINER_NODES)" | tee -a "$MAIN"
 srun --jobid="$HOLDER" --overlap --nodelist="$TRAINER_NODES" --nodes="$TRAINER_NNODES" --ntasks-per-node=1 \
      --gres=gpu:8 --cpus-per-task=96 \

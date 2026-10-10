@@ -9,7 +9,7 @@ anchors. Used here to give OLMo 3 the DeepSeek-V4 vocabulary (the distillation l
 ## Layout
 | file | purpose |
 |---|---|
-| `omp.py` | core (audited) centered-OMP numerics: cosine selection + ridge least-squares |
+| `omp.py` | core centered-OMP numerics: cosine selection + ridge least-squares |
 | `transplant.py` | end-to-end pipeline: rebuild embed/head, special-token map, chat template |
 | `cli.py`, `__main__.py` | YAML-config-driven CLI (`python -m tokenizer_transplant <config.yaml>`) |
 | `selftest.py` | fidelity self-checks (shared-row bitwise equality, held-out reconstruction cosine) |
@@ -21,7 +21,7 @@ anchors. Used here to give OLMo 3 the DeepSeek-V4 vocabulary (the distillation l
 # Edit a config to point base/donor/out at your local model dirs, then:
 python -m tokenizer_transplant full --config tokenizer_transplant/configs/olmo3_think_7b__deepseek_v4_flash.yaml
 
-# 32B production transplant (the checkpoint behind step01 of the final pipeline):
+# 32B production transplant (the base of the 32B training pipeline):
 python -m tokenizer_transplant full --config tokenizer_transplant/configs/olmo3_think_32b__deepseek_v4_flash.yaml
 ```
 

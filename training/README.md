@@ -1,9 +1,7 @@
 # training — FM-Pochi-32B training code
 
-Yi-Chia Chen's proof-pilot training pipeline, ported from the `hav4ik/ycchen-proof-pilot-codes` fork
-(branch `opd/b200-cu128` @ `ba818f5`), plus the CUDA 12.8 image and launchers we used for the
+Yi-Chia Chen's proof-pilot training pipeline, plus the CUDA 12.8 image and launchers we used for the
 64× B200 OPD run. Delivery stack: **tokenizer transplant → stage-1 SFT → soft distillation → OPD v2 → deploy**.
-License: Apache-2.0 ([LICENSE](LICENSE), attributions in [NOTICE](NOTICE)).
 
 | path | stage / role |
 |---|---|
@@ -19,7 +17,7 @@ License: Apache-2.0 ([LICENSE](LICENSE), attributions in [NOTICE](NOTICE)).
 | [`_common/`](_common/), [`_vendor_opd/`](_vendor_opd/) | JSD kernel + hidden codec; vendored v1 OPD leaf modules |
 | [`deploy/`](deploy/) | `make_olmo3sink_deploy.py` (training → deploy format), `prepare_yarn_deploy.py` (YaRN-256k config), `target/olmo2_sink.py` (reference sglang sink model + parity test) |
 | [`dflash/`](dflash/) | DFlash speculative-decoding draft training (deploy-time; not part of the student's training) |
-| [`docker/`](docker/) | cu128 image for H200 + B200 and the OPD launchers ([image](docker/README.md), [launch guide](docker/launch/README.md)) |
+| [`docker/`](docker/) | cu128 image for H200 + B200 (+ its base image in `base/`) and the OPD launchers ([image](docker/README.md), [launch guide](docker/launch/README.md)) |
 | [`docs/`](docs/) | OPD v2 algorithm, config reference (her best-run values), cu13 ↔ cu128 parity matrix |
 
 ## Layout conventions
@@ -36,6 +34,14 @@ top-level directories live under `training/`. So:
   on `sys.path`, which is `training/`, so `import olmo3_sink` / `train_core` resolve from anywhere.
 - The math_3r prompt templates are **not duplicated**: `distill_gen/math_3r/prompts.py` reads the repo's
   `evaluation/prompts/ycchen_math_3r/`, the same files the inference harness uses.
+
+## Model lineage
+
+| model | how it was produced |
+|---|---|
+| `ycchen/proof-pilot-checkpoints` step01 → step09 | tokenizer transplant → sink init → stage-1 SFT → YaRN-256k → soft distillation (her pipeline above) |
+| `chankhavu/yccchen-olmo3-deploy` (= `fieldsmodelorg/FM-Pochi-32B-ProofPilot`) | her OPD v2 from step09, `env_v33.sh` settings, OPD step 200, deploy format |
+| `fieldsmodelorg/FM-Pochi-32B-IMO26` (`opd-32b-bf16-step-*`) | our OPD v2 on 64× B200, warm-started from the deploy model above (her OPD step 200) |
 
 ## Running OPD
 
@@ -66,7 +72,6 @@ originals. Details, requirements and the single-node smoke: [`docker/launch/READ
 
 ## Not included
 
-Beaker specs (our B200 run was launched on Ai2's Beaker; `run_mn_nodes.sh` is the scheduler-free port of that
-launcher, same role logic), the large binaries (FA2 wheel, JIT-cache tarball — see
-[`docker/README.md`](docker/README.md#build)), the math_3r data-generation pipeline (its output dataset is on HF),
-and the rest of Yi-Chia's repo (evaluation, Kaggle, quantization).
+The large binaries (FA2 wheel, JIT-cache tarball — see [`docker/README.md`](docker/README.md#build)), the math_3r
+data-generation pipeline (its output dataset is on HF), and the rest of Yi-Chia's repo (evaluation, Kaggle,
+quantization).

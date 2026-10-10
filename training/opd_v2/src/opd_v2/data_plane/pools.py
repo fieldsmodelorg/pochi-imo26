@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""load-aware concurrency pools (fixes v1 P9: teacher's static by-wid round-robin -> load-aware).
+"""load-aware concurrency pools (load-aware instead of static round-robin).
 
 One `Pool` per service (rollout / teacher), each holding several replicas. `slot()` is an async context manager:
 1. `await` the global semaphore (limits total in-flight);
@@ -9,8 +9,7 @@ One `Pool` per service (rollout / teacher), each holding several replicas. `slot
 
 Uses "in-flight count" rather than `/v1/loads` as the load signal: always available, zero extra round-trip,
 and pick+inc is atomic under the single event loop. (`/v1/loads` is kept for a future upgrade.) The two pools
-have independent semaphores -> rollout (TP1, slow) / teacher (TP4, fast) capacities are tuned separately
-(PLAN §5.3/§5.4).
+have independent semaphores -> rollout (TP1, slow) / teacher (TP4, fast) capacities are tuned separately.
 """
 from __future__ import annotations
 
@@ -73,7 +72,7 @@ class Pool:
         except Exception as e:
             r.n_errors += 1
             r.dead_until = time.monotonic() + self.dead_seconds
-            log.warning("%s slot err on %s: %r", self.name, r.base_url, e)   # V33: record the exception type to help diagnose the error source
+            log.warning("%s slot err on %s: %r", self.name, r.base_url, e)   # record the exception type to help diagnose the error source
             raise
         finally:
             r.in_flight -= 1

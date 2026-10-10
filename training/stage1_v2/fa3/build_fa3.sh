@@ -4,7 +4,7 @@
 # producing the `flash_attn_interface` module that olmo3_sink imports for
 # attn_implementation="olmo3_sink_fa3". Called from the Singularity %post.
 #
-# Recipe mirrors docs/fa3_build.md: build ONLY bf16 + hdim128 (Olmo3-7B head_dim=128) +
+# Build ONLY bf16 + hdim128 (Olmo3-7B head_dim=128) +
 # sm90, so the kernel matrix is small (~2-3 min). The 6-file sink patch is backward
 # compatible (sink=None == stock FA3).
 #
@@ -12,8 +12,7 @@ set -euo pipefail
 
 FA_SRC="${FA_SRC:-/opt/flash-attention}"
 PATCH="${PATCH:-/opt/fa3/fa3_attention_sink.patch}"
-# PINNED to the flash-attention commit the sink patch was authored + validated against
-# (fp32 kernel verify 9/9; 2026-05-27 main). cutlass submodule resolves to 7127592 (v4.3.0).
+# Pinned to the flash-attention commit the sink patch targets; cutlass submodule = 7127592 (v4.3.0).
 FA_COMMIT="${FA_COMMIT:-0bbb25a3a5ad3c58c029b3d287d6c9af56a5cad5}"
 
 git clone https://github.com/Dao-AILab/flash-attention.git "$FA_SRC"

@@ -16,7 +16,7 @@ Masking contract (offset-based, exact):
     error-recovery context) are masked.
   - We then tokenize the full string once with `return_offsets_mapping=True` and label a
     token iff its char span falls inside a target (loss-bearing assistant) span. Because
-    every segment boundary sits on a single-id control token (verified in Phase 0), the
+    every segment boundary sits on a single-id control token, the
     offsets line up and there is no boundary ambiguity.
 
 Fidelity: the reconstructed string is asserted byte-equal to `encode_messages(...)`; any

@@ -5,7 +5,7 @@ Run `hf auth login` (or set HF_TOKEN) first. This pushes:
   - datasets/training_l2/  (parquet shards + README.md dataset card)
   - the reproduction scripts -> scripts/ in the repo
 
-Integrity: because this host can flip bytes in RAM under load, the upload path itself is
+Integrity: on a host that can flip bytes in RAM under load, the upload path itself is
 not fully trusted. After upload we compare, for a sample of shards, the LOCAL sha256
 (computed twice, must agree -> guards the local read) against the REMOTE LFS sha256
 reported by the Hub (-> guards the upload transfer). Any mismatch is reported loudly.

@@ -16,5 +16,5 @@ from train_core.l3_render import render_l3   # -> input_ids + per-token loss mas
 
 ## Notes
 - "L2" is the tokenizer-independent unified message format; "L3" is the tokenized + masked form
-  fed to `olmo3_sink` training. The mask covers assistant turns only, computed by character offsets
-  and verified against an `encode_messages` round-trip.
+  fed to `olmo3_sink` training. The mask covers assistant turns only, computed by character offsets;
+  the reconstructed string is asserted byte-equal to `encode_messages` output (divergence is a hard error).

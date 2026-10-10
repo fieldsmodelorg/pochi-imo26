@@ -12,6 +12,7 @@ launch so the engine emits post-norm hidden states, then encode them with the `h
 | path | purpose |
 |---|---|
 | `_patch_sglang.py` | The canonical patch generator. Four anchored patches applied to sglang: (1) post-norm hidden + `wo_a` streaming, (2) scheduler hidden append, (3) `/score` HTTP endpoint (encodes hidden → codec, optional server-side write to shared FS), (4) top-1 head materialization. Anchors are asserted so an upstream change fails loudly. |
+| `_patch_sglang_514.py` | The same four patches re-anchored for sglang 0.5.14 (where the output-processor mixin moved to `scheduler_components/batch_result_processor.py`). |
 | `_validate_hidden.py` | Correctness harness (A/B/C checks) for `return_hidden_states` on the patched engine. |
 | `_extract_e2e.py` | End-to-end smoke: docs json → sglang spool → `had+int6` shard. |
 | `_render_docs.py` | Pre-render a few L2 docs to token ids (JSON) as validation input, decoupling L3 rendering from the engine runs. |
@@ -43,5 +44,5 @@ python training/teacher_extract/dataprep/extract_hidden.py --manifest work/manif
   (points at `../_common` for `hidden_codec`), `OPD_V2_SRC` (points at `../opd_v2/src` for the shared-FS writer).
 - The codec (`had+int6`, Hadamard rotation + int6 block-quant) lives in `../_common/hidden_codec.py`; the
   opd byte-layout constants are vendored under `../_vendor_opd/opd/`.
-- Correctness was validated against a fresh engine run on the same doc/node (bf16-head `mean|Δ|` at engine
-  rerun-nondeterminism floor).
+- Correctness check: compared against a fresh engine run on the same doc/node, the bf16-head `mean|Δ|` should
+  be at the engine's rerun-nondeterminism floor.

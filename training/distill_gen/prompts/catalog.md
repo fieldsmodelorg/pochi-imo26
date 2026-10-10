@@ -4,8 +4,8 @@ Curated, source-verified prompt templates for **natural-language math proof gene
 and the closely-coupled self-verify / refine / grade prompts. Intended for diversifying
 teacher-data generation (off-policy distillation, DeepSeek-V4 target).
 
-The user **already has** the DeepSeek-Math-V2 "A.1 Proof Generation Prompt"
-(`## Solution / ## Self Evaluation / \boxed{score}`). It is NOT reproduced here.
+The DeepSeek-Math-V2 "A.1 Proof Generation Prompt" (`## Solution / ## Self Evaluation / \boxed{score}`)
+is stored as `dsmv2_a1.txt` and is NOT reproduced here.
 
 ---
 
@@ -19,7 +19,7 @@ proofs by **DeepSeek-Math-V2**, but it does **not publish the rubric-gen or proo
 So the closest *published, verbatim* prompts come from two papers:
 
 - **arXiv 2511.01846** — DeepMind IMO-Bench (ProofAutoGrader / AnswerAutoGrader / GradingBench grader). Grader-side only; no proof-generation prompt in the paper.
-- **arXiv 2510.13888** — "Reliable Fine-Grained Evaluation of Natural Language Math Proofs" (ProofBench / ProofGrader, ETH-SRI + Berkeley). This one DOES publish a **Generator (prover) prompt**, a **Marking-Scheme generation prompt**, and four **Evaluator (grader) prompts**, all verbatim. This is the single richest source for the user's purpose.
+- **arXiv 2510.13888** — "Reliable Fine-Grained Evaluation of Natural Language Math Proofs" (ProofBench / ProofGrader, ETH-SRI + Berkeley). This one DOES publish a **Generator (prover) prompt**, a **Marking-Scheme generation prompt**, and four **Evaluator (grader) prompts**, all verbatim. This is the single richest source for proof-data generation.
 
 ---
 
@@ -367,7 +367,7 @@ present your final score in the format below.
 
 ## 5. DeepMind IMO-Bench "AnswerAutoGrader" Prompt (final-answer equivalence)
 - **Source:** arXiv **2511.01846**, **Appendix A.5**. PDF: https://arxiv.org/pdf/2511.01846
-- **Role:** answer-equivalence grader (NOT a proof grader; for find-the-value problems). Included because the user's pipeline mixes answer-extraction and proof tasks.
+- **Role:** answer-equivalence grader (NOT a proof grader; for find-the-value problems). Included because the pipeline mixes answer-extraction and proof tasks.
 - **Distinctive:** Pure final-answer equivalence checker (algebraic/numeric/set equivalence), `<thinking>` + `\boxed{Correct|Incorrect}`, no partial credit. Placeholders: `{Problem_Statement}`, `{Model_Solution}`, `{Golden_Answer}`.
 
 ```
@@ -577,7 +577,7 @@ Below is the bug report. If you agree with certain item in it, can you improve y
 ```
 Please reason step by step, and put your final answer within \boxed{}.
 ```
-- **Distinctive:** This is the *opposite* of what the user wants — it optimizes a boxed final answer, not a rigorous prose proof. Listed so the user knows what NOT to use for proof distillation.
+- **Distinctive:** This is the *opposite* of a proof prompt — it optimizes a boxed final answer, not a rigorous prose proof. Listed as what NOT to use for proof distillation.
 
 ---
 
@@ -596,11 +596,10 @@ Please reason step by step, and put your final answer within \boxed{}.
 ---
 
 ## 12. OpenAI / DeepMind IMO 2025 gold systems
-- **Status: prompts NOT publicly available.** OpenAI's IMO-2025-gold model and Google DeepMind's Gemini Deep Think IMO-gold run did not publish their proof-generation prompts. (DeepMind's *Aletheia* research-math agent, in `google-deepmind/superhuman`, ships some prompts/outputs but for research-level problems, not the IMO-gold contest prompt.) Do not fabricate; the closest *public* IMO-gold-style prover prompt is #7 (lyang36/IMO25, Gemini 2.5 Pro).
-```
+- **Status: prompts NOT publicly available.** OpenAI's IMO-2025-gold model and Google DeepMind's Gemini Deep Think IMO-gold run did not publish their proof-generation prompts. (DeepMind's *Aletheia* research-math agent, in `google-deepmind/superhuman`, ships some prompts/outputs but for research-level problems, not the IMO-gold contest prompt.) The closest *public* IMO-gold-style prover prompt is #7 (lyang36/IMO25, Gemini 2.5 Pro).
 
 ---
 
 ## Cross-references / notes
-- **DeepSeek-Math-V2 A.1** (already owned): closest published cousins are #4 (IMO-Bench ProofAutoGrader, same 0–7 + thinking + tag-parse) and #7c (IMO25 verifier). The DeepSeek self-eval-in-one-prompt design is most distinct from #1/#7a (pure provers) and #3 (rubric-mapping grader).
-- **Host-memory caveat:** PDF OCR can flip characters; the #2 marking-scheme prompt had several glyphs normalized. Re-extract from PDF before using #2 verbatim in production.
+- **DeepSeek-Math-V2 A.1** (`dsmv2_a1.txt`): closest published cousins are #4 (IMO-Bench ProofAutoGrader, same 0–7 + thinking + tag-parse) and #7c (IMO25 verifier). The DeepSeek self-eval-in-one-prompt design is most distinct from #1/#7a (pure provers) and #3 (rubric-mapping grader).
+- **OCR caveat:** PDF OCR can flip characters; the #2 marking-scheme prompt had several glyphs normalized. Re-extract from PDF before using #2 verbatim in production.

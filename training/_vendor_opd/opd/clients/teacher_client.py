@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Client for the teacher scoring service (PLAN §4).
+"""Client for the teacher scoring service.
 
 `score(input_ids, start)` -> returns (packed_bytes, scales_bytes, seq_len); the trainer reconstructs
 teacher logits with `opd.codec.decode` + a resident `W_rot`. The bytes are stored directly in the

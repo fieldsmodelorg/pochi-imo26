@@ -1,15 +1,14 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""produce_sample atom — "one rollout + one teacher score" = one independent async coroutine (V3).
+"""produce_sample atom — "one rollout + one teacher score" = one independent async coroutine.
 
-This is the core of the "elegant design" the user wanted (PLAN §5):
 - **Fully independent**: does not depend on other tasks; the only shared state = the two pools' semaphores
   + the output buffer.
 - **As soon as one trajectory finishes, send it straight to the teacher** (don't wait for the other samples
-  of the same prompt) -> eliminates v1's "gate the whole group on the slowest trajectory" (P3/P4).
+  of the same prompt) -> avoids "gate the whole group on the slowest trajectory".
 - **Finish early, enter the buffer early** -> lowers staleness.
-- **Return a handle, not bytes** (teacher writes to FS server-side) -> buffer/scatter is ultra-light (P7 fix).
+- **Return a handle, not bytes** (teacher writes to FS server-side) -> buffer/scatter is ultra-light.
 
-N samples = N independent atoms (`fan_out`, V1). Any failed step -> return None (scheduler counts fail, cleans the half-written file).
+N samples = N independent atoms (`fan_out`). Any failed step -> return None (scheduler counts fail, cleans the half-written file).
 """
 from __future__ import annotations
 
@@ -30,7 +29,7 @@ class Prompt:
 
 @dataclass
 class ProduceResult:
-    """The result of produce_sample (V33). Makes the three states "success / admission-drop / fail" explicit,
+    """The result of produce_sample. Makes the three states "success / admission-drop / fail" explicit,
     so the scheduler can both record finish_reason for **all** generations (EOS/length generation-side ratio
     monitoring stays intact) and count "deliberately dropped" separately from "errored".
     - traj: successfully scored and admitted -> ScoredTrajectory; otherwise None.
@@ -126,5 +125,5 @@ async def produce_sample(prompt: Prompt, *, rollout_pool: Pool, teacher_pool: Po
 
 
 def fan_out(prompt: Prompt, n: int) -> list[Prompt]:
-    """N samples = the input for N independent atoms (same problem, each independent, each finishes and enters the buffer on its own, V1)."""
+    """N samples = the input for N independent atoms (same problem, each independent, each finishes and enters the buffer on its own)."""
     return [prompt] * n

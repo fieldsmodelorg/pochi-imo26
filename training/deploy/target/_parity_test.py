@@ -6,7 +6,7 @@ logprob deltas and greedy top-1 agreement against the eager fp32-attention
 reference.
 
 Usage:
-  uv run python training/stage1/sglang_deploy/_parity_test.py [--tag ref] [--port 30000]
+  uv run python training/deploy/target/_parity_test.py [--tag ref] [--port 30000]
 """
 
 import argparse

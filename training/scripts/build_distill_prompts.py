@@ -178,7 +178,7 @@ os.makedirs(OUTDIR, exist_ok=True)
 tbl = pa.Table.from_pylist(rows)
 pq.write_table(tbl, f'{OUTDIR}/problems.parquet', compression='zstd')
 
-# read-back verify (host bit-flip safety)
+# read-back verify (bit-flip safety)
 back = pq.read_table(f'{OUTDIR}/problems.parquet')
 assert back.num_rows == len(rows), "row count mismatch on readback"
 bp = set(back.column('problem').to_pylist()); op = set(r['problem'] for r in rows)

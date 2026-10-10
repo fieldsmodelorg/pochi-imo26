@@ -74,7 +74,7 @@ def load_init_weights(path: str, draft, opt) -> None:
     ``BF16Optimizer.__init__`` snapshots fp32 masters from the (random) init at
     construction, and ``opt.step`` writes the master back into the model. Without
     this re-sync the first step would overwrite the warm-started weights with the
-    random master (observed: acc 0.48 at step 1 collapsing to ~random by step 5)."""
+    random master (otherwise accuracy collapses to random within a few steps)."""
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     sd = ckpt["model"] if "model" in ckpt else ckpt
     sd = {k[len("module."):] if k.startswith("module.") else k: v for k, v in sd.items()}

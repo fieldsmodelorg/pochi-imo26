@@ -4,7 +4,7 @@
 #
 #   CUDA_VISIBLE_DEVICES=0,1,2,3 ./run_in_container.sh _validate_hidden.py --tp 4
 #
-# NOT part of the FMI submission; local extraction tooling only.
+# Local extraction tooling.
 set -euo pipefail
 SIF=${SIF:-/images/sglang.sif}
 HERE="$(cd "$(dirname "$0")" && pwd)"

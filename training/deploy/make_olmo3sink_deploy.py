@@ -2,9 +2,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """Build an sglang-servable deploy dir from an olmo3_sink training checkpoint.
 
-Generalizes deploy/dflash/make_target_deploy.py (which hardcodes stage1-v2-7b) to any
-src/dst, single- or multi-shard. Weights are hardlinked (original untouched, no 65GB copy);
-config.json is rewritten per the stage-1 deploy recipe (docs/stage1_deploy_test.md):
+Works for any src/dst, single- or multi-shard. Weights are hardlinked (original untouched,
+no 65GB copy); config.json is rewritten as follows:
 
   - rope_parameters -> legacy top-level rope_theta + rope_scaling (dodges sglang's
     Olmo3Config yarn-validation order bug; tf5 rebuilds rope_parameters from the aliases,
@@ -14,7 +13,7 @@ config.json is rewritten per the stage-1 deploy recipe (docs/stage1_deploy_test.
   - model_type=olmo3, architectures=[Olmo3SinkForCausalLM], dtype/torch_dtype=bfloat16,
     use_cache=true; max_position_embeddings kept as-is.
 
-Serve (per the 7B PASS recipe), 32B may need --tp 2:
+Serve: (32B may need --tp 2)
   apptainer exec --nv --bind $PP_ROOT \
     --bind deploy/target/olmo2_sink.py:/sgl-workspace/sglang/python/sglang/srt/models/olmo2.py \
     $SGLANG_SIF \

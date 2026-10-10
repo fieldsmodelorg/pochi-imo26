@@ -1,6 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Olmo3Sink SFT training entrypoint, wired to the throughput findings in
-`docs/train_bench.md`.
+"""Olmo3Sink SFT training entrypoint.
 
 Two regimes (auto-selected by world size), both Liger + olmo3_sink_fa3:
 

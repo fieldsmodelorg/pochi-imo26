@@ -4,7 +4,7 @@ torch.compile-safe.
 
 Why this exists: transformers' `flash_attention_2` only applies `s_aux` when the installed flash
 function accepts a sink arg (FA3's `s_aux` / FA4's `learnable_sink`). Stock FA2 has none, so HF
-silently DROPS the sink (verified). Yi-Chia's `olmo3_sink_fa3` needs Hopper FA3. On B200 (no FA3) we
+silently drops the sink. `olmo3_sink_fa3` needs Hopper FA3. On B200 (no FA3) we
 apply the sink as a **post-correction on FA2's (out, lse)** — the exact re-normalization from her
 `fa3_sink.py`, which is flash-backend-agnostic:
 
@@ -14,7 +14,7 @@ Forward/backward are each a `torch.library.custom_op` with a registered fake, so
 opaque nodes (**no graph break under torch.compile + gradient checkpointing**), matching the FA3 kernel.
 The backward feeds FA2's native varlen backward the sink-corrected `out` + sink-inclusive `lse` (FA2
 recomputes P = exp(scores − lse), so it reconstructs the sink weights → exact dq/dk/dv); `dsink` is a
-closed-form Triton reduction. Verified fp64-exact vs the eager gpt-oss sink reference.
+closed-form Triton reduction. Matches the eager gpt-oss sink reference in fp64.
 
 Register with `register_olmo3_sink_fa2()`, then load with `attn_implementation="olmo3_sink_fa2"`.
 """

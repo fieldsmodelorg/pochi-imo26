@@ -3,7 +3,7 @@
 
 Liger's Triton kernels (RoPE, RMSNorm, SwiGLU, fused-linear-cross-entropy) are fully
 orthogonal to our `olmo3_sink_fa3` attention: Liger patches MLP / norms / RoPE /
-lm_head-loss, while the sink attention is left untouched. Verified on Olmo-3-7B: loss
+lm_head-loss, while the sink attention is left untouched. On Olmo-3-7B: loss
 unchanged (diff 1e-4), grads still flow to sinks, ~20% lower peak memory (fused-linear-CE
 avoids materializing the [B,S,vocab] logits) and ~9% faster step.
 

@@ -1,8 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Lightweight trajectory buffer (V16) — stores only `{ids, prompt_len, wv, handle}`, **no teacher bytes**.
+"""Lightweight trajectory buffer — stores only `{ids, prompt_len, wv, handle}`, **no teacher bytes**.
 
-The v1 buffer stored the whole teacher hidden bytes inside the Trajectory (~3.3KB/token), so 4096 long-CoT
-trajectories ate hundreds of GB of RAM. The v2 buffer stores only token ids + a HiddenHandle (pointing to
+Storing the whole teacher hidden bytes inside the Trajectory (~3.3KB/token) would make 4096 long-CoT
+trajectories eat hundreds of GB of RAM. This buffer stores only token ids + a HiddenHandle (pointing to
 the hidden file on shared FS), so the trajectory/token caps can be much larger and the scatter is
 ultra-light. The bytes are read directly from FS by the owning trainer rank via the handle (see hidden_store).
 
@@ -25,7 +25,7 @@ class ScoredTrajectory:
     """One student rollout + its already-scored teacher hidden handle (pointing to shared FS)."""
     ids: list[int]               # full sequence (prompt + generated), token-in-token-out
     prompt_len: int              # the first prompt_len tokens are the prompt
-    wv: int                      # the weight_version when the rollout server generated it (server-reported, V6)
+    wv: int                      # the weight_version when the rollout server generated it (server-reported)
     handle: HiddenHandle         # handle to the teacher hidden on shared FS (no bytes)
     meta: dict = field(default_factory=dict)
     finish_reason: str = ""      # rollout stop reason: "stop"=EOS / "length"=window hit (truncation monitor; not sent on the wire)
@@ -110,7 +110,7 @@ class TrajectoryBuffer:
                   ) -> tuple[list[ScoredTrajectory], list[ScoredTrajectory]]:
         """Pull up to n fresh-enough trajectories; drop any stale ones encountered. Returns (kept, dropped_stale).
 
-        dropped_stale is returned too so the caller can GC their hidden files (V14: unlink after stale-drop).
+        dropped_stale is returned too so the caller can GC their hidden files (unlink after stale-drop).
         """
         out: list[ScoredTrajectory] = []
         stale: list[ScoredTrajectory] = []

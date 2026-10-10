@@ -6,12 +6,12 @@ pre-rendered by _render_docs.py so this script needs only sglang/torch/numpy.
 Hidden dim comes from --model's config (Flash 4096 / Pro 7168). Pro needs:
   --tp 8 --mem-frac 0.94 --chunk 4096 --max-running 1 --load-threads 1
 (chunk 4096: the full-prompt-logprob B check OOMs at 8192; max-running 1 +
-mem-frac 0.94: hybrid-SWA pool stall, see README pitfall #14).
+mem-frac 0.94: hybrid-SWA pool stall).
 
 Checks, against a TP=N offline Engine on real L2 docs:
   A. hidden shape/dtype is [seq, 4096] post-hc_head post-norm (needs the
      SGLANG_DSV4_HIDDEN_POST_NORM=1 patch bind-mounted over the image's
-     deepseek_v4.py, see sglang_dsv4_post_norm_hidden.patch)
+     deepseek_v4.py, see _patch_sglang.py patch 1)
   B. logits reconstructed as hidden @ head.weight.T reproduce the engine's own
      input_token_logprobs (proves we captured the exact tensor that feeds lm_head)
   C. bs=1 vs batched submission return identical hidden for the same doc

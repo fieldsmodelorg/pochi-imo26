@@ -8,7 +8,7 @@ share a row; one long proof fills its own. Row assignment is deterministic (glob
 shuffle by seed) so every rank computes the same row list and takes a fixed slice =>
 synchronized FSDP collectives, exactly like stage1's offline-packed L4.
 
-Reuses v1's proven pieces: offpolicy_data.{read_index,build_window_specs,load_window},
+Reuses: offpolicy_data.{read_index,build_window_specs,load_window},
 opd.batch.pack_trajectories, opd.clients.teacher_client.decode_teacher_hidden.
 """
 from __future__ import annotations
@@ -61,7 +61,7 @@ def build_rows(index_path, *, micro_len: int, truncate_len: int, seed: int):
 
 
 def _trim_bin(b: PackedBin) -> PackedBin:
-    """Exact-trim isolated pad tail and rebuild dynamic varlen metadata (from v1)."""
+    """Exact-trim isolated pad tail and rebuild dynamic varlen metadata."""
     if not b.segments:
         return b
     t = dict(b.tensors)

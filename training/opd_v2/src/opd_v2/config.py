@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""OPD v2 configuration — the **single source of truth** (fixes v1's P10 "three drifting default sets").
+"""OPD v2 configuration — the **single source of truth**.
 
 All four processes (rollout sglang / teacher sglang / trainer server / orchestrator) read from the
 **same** `OPDConfig`. Mechanism: the launcher parses once -> writes `<run>/config.json` -> each of the
@@ -7,8 +7,8 @@ four processes calls `OPDConfig.load(run_dir)` at startup to read back the same 
 carries its own defaults.
 
 This file does **not import torch** (the orchestrator is a pure-CPU async process and must be importable
-on a GPU-less host). Path/dimension constants follow v1 (validated): student=stage1-v2-7b,
-teacher=DeepSeek-V4-Flash, hid=4096, vocab=129280 (teacher==student, verified in G1).
+on a GPU-less host). Path/dimension constants: student=stage1-v2-7b, teacher=DeepSeek-V4-Flash,
+hid=4096, vocab=129280 (teacher and student share the vocabulary).
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import json
 import os
 from dataclasses import dataclass, field
 
-# ---- Fixed constants (this cluster, inherited from v1) ----
+# ---- Fixed constants (this cluster) ----
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 STUDENT_PATH = f"{REPO}/outputs/stage1-v2-7b"
 STUDENT_DEPLOY_PATH = f"{REPO}/outputs/stage1-v2-7b-deploy"  # legacy-rope config (safe for rollout reload)
@@ -36,8 +36,8 @@ class RolloutCfg:
     """student rollout sglang server (fp8 flash_rl deployment, token-in-token-out)."""
     urls: list[str] = field(default_factory=lambda: ["http://127.0.0.1:8200"])
     tp_size: int = 1
-    fp8: bool = True                    # flash_rl fp8 deployment (V30; opd_v2/flash_rl)
-    # sampling (V1: one request = one trajectory; the N samples are fanned out in the client)
+    fp8: bool = True                    # flash_rl fp8 deployment (opd_v2/flash_rl)
+    # sampling (one request = one trajectory; the N samples are fanned out in the client)
     n_samples: int = 4                  # number of independent atoms to run per prompt
     temperature: float = 1.0
     top_p: float = 0.95                 # top_p=1.0 tail-sampling produces garbage the teacher cannot score
@@ -55,7 +55,7 @@ class RolloutCfg:
     gen_timeout_s: float = 3600.0
     # per-replica in-flight limit (aligned with sglang --max-running-requests)
     max_inflight_per_replica: int = 8
-    # ---- training-buffer admission (V33; does not touch the rollout sampling distribution, only decides
+    # ---- training-buffer admission (does not touch the rollout sampling distribution, only decides
     #      which on-policy samples enter the gradient) ----
     # A finish_reason matching this is dropped right after generation, before teacher/buffer (before the
     # teacher -> saves a hidden-state disk write).
@@ -70,7 +70,7 @@ class TeacherCfg:
     """DeepSeek-V4-Flash teacher scoring sglang server (+ /score FS-write patch)."""
     urls: list[str] = field(default_factory=lambda: ["http://127.0.0.1:8100"])
     tp_size: int = 4
-    max_inflight_per_replica: int = 64   # engine continuous-batching capacity (v1 measured 64-conc ~22.9k tok/s)
+    max_inflight_per_replica: int = 64   # engine continuous-batching capacity (64-conc ~22.9k tok/s)
 
 
 @dataclass
@@ -88,9 +88,9 @@ class DataPlaneCfg:
 
 @dataclass
 class BufferCfg:
-    """Lightweight trajectory buffer (stores only handles, no bytes, V16) + bounded staleness."""
+    """Lightweight trajectory buffer (stores only handles, no bytes) + bounded staleness."""
     capacity: int = 4096                 # max number of trajectories
-    capacity_tokens: int = 16_000_000    # token cap (backpressure; stores only ids+handle, so it can be larger than v1)
+    capacity_tokens: int = 16_000_000    # token cap (backpressure; stores only ids+handle, so it can be large)
     max_staleness: int = 0               # drop if cur_step - wv > this value; **0=disabled** (OPD has no
                                          # importance ratio, staleness is not a correctness requirement, long-CoT
                                          # rollouts are expensive to discard, so off by default; see is_stale)
@@ -99,23 +99,22 @@ class BufferCfg:
 
 @dataclass
 class LossCfg:
-    """full-vocab JSD(β) + V34 routed-OPD stabilization (skew-KL base + routed top-K FKL + EOS/tail reweight).
-    repo chunked fp32-softmax kernel (V26, not Liger). **All V34 knobs default to 0/off -> bit-identical
-    back to β OPD.** Design: see `V34_PLAN.md`; root cause = length self-amplification / EOS under-training
-    (DEEP_REVIEW §A2)."""
+    """full-vocab JSD(β) + routed-OPD stabilization (skew-KL base + routed top-K FKL + EOS/tail reweight).
+    repo chunked fp32-softmax kernel (not Liger). **All routed-OPD knobs default to 0/off -> identical
+    to plain β OPD.** Motivation: length self-amplification / EOS under-training."""
     beta: float = 1.0                    # 0=fwdKL 0.5=JSD 1=revKL (on-policy canonical OPD)
     temperature: float = 1.0
     hard_weight: float = 0.0             # pure distillation (CE anchor off by default)
     soft_weight: float = 1.0
     chunk_size: int = 4096               # token chunk for chunked JSD (soft_v2 uses 4096)
     mask_easy: bool = False              # experimental, non-canonical; off by default
-    # ---- V34 routed-OPD loss-side root-cause fix (all default to 0/off = falls back to naive β) ----
+    # ---- routed-OPD knobs (all default to 0/off = falls back to naive β) ----
     # skew reverse-KL: change the base to KL(student ‖ (1-α)·teacher + α·student); α≈0.1 removes the
     # zero-avoiding pathology on teacher-near-zero tokens (the proper fix for length self-amplification;
     # not "just lower β", it preserves signal strength). **Only active when beta==1.**
     skew_alpha: float = 0.0
     # routed top-K forward-KL: overlay FKL on high-entropy / overconfident-wrong / severe-outlier tokens
-    # (advice §2). **The whole routing package is gated by fkl_lambda>0** (including base down-weighting on outliers).
+    # **The whole routing package is gated by fkl_lambda>0** (including base down-weighting on outliers).
     fkl_lambda: float = 0.0              # 0=off; 0.15~0.25=on
     fkl_top_k: int = 64
     route_high_ent_nats: float = 2.5     # teacher entropy(nats) > this -> high-entropy (+FKL)
@@ -145,10 +144,10 @@ class TrainerCfg:
     grad_clip: float = 1.0
     grad_ckpt: bool = True
     master_dtype: str = "fp32"           # fp32 master + bf16 compute
-    cpu_offload: bool = False            # only enable for 32B / very long context (FSDP2 CPUOffloadPolicy, V27)
-    micro_batch_tokens: int = 65536      # max packed-bin length (whole traj is not windowed, V25)
+    cpu_offload: bool = False            # only enable for 32B / very long context (FSDP2 CPUOffloadPolicy)
+    micro_batch_tokens: int = 65536      # max packed-bin length (whole traj is not windowed)
     train_batch_trajs: int = 8           # trajectories consumed globally per step (rank-0 LPT splits into world shares)
-    weight_sync_every: int = 1           # orchestrator triggers a weight sync every N steps (N=1=most on-policy, V22)
+    weight_sync_every: int = 1           # orchestrator triggers a weight sync every N steps (N=1=most on-policy)
     log_every: int = 1                   # print one line + log to wandb every N steps (1=every step)
     g4_every: int = 5                    # compute g4 agreement + learning diagnostics (entropy/bidirectional KL)
                                          # every N steps; this is a reuse-hidden no_grad small GEMM (cap 4096),
@@ -159,7 +158,7 @@ class TrainerCfg:
     http_port: int = 8300                # rank-0 ingress port
     # which config/tokenizer to copy for weight sync (empty=student; set to a deploy dir to avoid the sglang rope validation bug)
     deploy_config_src: str = STUDENT_DEPLOY_PATH
-    # durable checkpoint / resume (DCP model+optim+sched, completely separate from the _a/_b rolling buffer, never overwritten, V32)
+    # durable checkpoint / resume (DCP model+optim+sched, completely separate from the _a/_b rolling buffer, never overwritten)
     # —— the rolling buffer is overwritten every weight_sync and has no optim state; this is the real
     #    time-limit/crash-resistant checkpoint + exact resume.
     checkpoint_every: int = 50           # write a durable ckpt to <run>/checkpoints/step_<N>/ every N steps (0 = off)
@@ -196,7 +195,6 @@ class AgenticCfg:
     /scores. Parse-passing student generations are written back to the pool (answer only, think stripped)
     -> the pool deepens and context becomes progressively on-policy. The mix is auto-balanced by fill-fraction
     sampling (verify naturally dominates because of its fan-out, so no un-verified proofs pile up).
-    Design: see PLAN § (V33+)/DECISIONS.
     """
     # role target weights (fill_fraction = student_count(role) / weight; pick the available role with the lowest fill_fraction).
     # 22/44/20/14: verify=2×prove (= the fan-out of 2 verifies per proof, so verify keeps up with proof, zero un-verified backlog).
@@ -229,7 +227,7 @@ class AgenticCfg:
 
 @dataclass
 class EvalCfg:
-    """in-loop ProofBench eval (fixes P11)."""
+    """in-loop ProofBench eval."""
     enabled: bool = False
     every_weight_versions: int = 50
     teacher_ceiling: float = 4.64        # dsv4-flash high_notool ceiling (/7)

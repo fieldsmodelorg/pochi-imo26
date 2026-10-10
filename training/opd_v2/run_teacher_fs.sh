@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # OPD v2 teacher scoring service = native sglang server + hidden-extract patches,
-# **but /score supports out_path -> writes shared FS server-side and returns a handle JSON** (P7 fix, V12).
+# **but /score supports out_path -> writes shared FS server-side and returns a handle JSON**.
 #
-# Differences vs v1 `training/opd/examples/run_teacher_service.sh`:
+# Notes:
 #   - http_server is swapped for opd_v2/teacher_patch/http_server.py (adds the out_path branch; the other 3
-#     patches are reused from teacher_extract/_patched, same image version, verified consistent).
+#     patches are reused from teacher_extract/_patched, same image version).
 #   - additionally sets OPD_V2_SRC so /score inside the container can `from opd_v2.hidden_store import write_hidden`
 #     (single source of truth for the hidden file format).
 #

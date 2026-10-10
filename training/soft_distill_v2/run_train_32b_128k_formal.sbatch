@@ -13,9 +13,8 @@
 #   EPOCHS=0 MAX_STEPS=3 SAVE_EVERY=2 OUT_DIR=outputs/_sdv2_32b_smoke \
 #   WANDB_MODE=disabled sbatch --time=00:40:00 --job-name=sdv2-32b-smoke run_train_32b_128k_formal.sbatch
 #
-# v2test continuation (the stage1-v2-32b-softdistill-v2test checkpoint) reused this
-# script with env overrides -- new data index + init from the previous epoch-1
-# checkpoint on 7 nodes / 56 GPU:
+# To reproduce stage1-v2-32b-softdistill-v2test: env overrides -- new data index +
+# init from the previous epoch-1 checkpoint on 7 nodes / 56 GPU:
 #   INDEX=<dsflash-v2-test index.jsonl> \
 #   STUDENT=outputs/stage1-v2-32b-softdistill-v2/ep1 \
 #   OUT_DIR=outputs/stage1-v2-32b-softdistill-v2test \

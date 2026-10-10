@@ -1,5 +1,5 @@
 # OPD v2 "MAX" — her V33 + ~25% LONGER ROLLOUT (128k -> 160k). B200/B300 ONLY. This is the config of our
-# 64x B200 run (formerly beaker/opd_max_b200.yaml). Source before run_mn_cu128.sh (or let opd_v2.sbatch do it):
+# 64x B200 run. Source before run_mn_cu128.sh (or let opd_v2.sbatch do it):
 #   source training/docker/launch/env_max_b200.sh && bash training/docker/launch/run_mn_cu128.sh
 #
 # Everything (LR, beta, batch, topology, backends, checkpointing) is env_v33.sh; only the 5 hard-coupled length

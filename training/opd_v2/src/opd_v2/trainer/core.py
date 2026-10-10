@@ -47,7 +47,7 @@ IGNORE = -100
 
 
 # ---------------------------------------------------------------------------
-# forward wrapper (V28/V26)
+# forward wrapper
 # ---------------------------------------------------------------------------
 def opd_v2_forward(self, input_ids, position_ids, cu_seq_lens_q, cu_seq_lens_k,
                    max_length_q, max_length_k, opd_student_pos, opd_teacher_hidden,
@@ -56,14 +56,14 @@ def opd_v2_forward(self, input_ids, position_ids, cu_seq_lens_q, cu_seq_lens_k,
     """Installed as model.forward: computes full-vocab chunked JSD inside the FSDP root unshard region. Returns scalar loss.
 
     bf16 GEMM + forced fp32 log-softmax/KL (inside jsd_kernel), does not materialize [BT,V]
-    (soft_v2 verified rel 1.9e-5). When opd_student_pos is empty (dummy/empty rank): sh=[0,H], the
+    (rel err 1.9e-5 vs soft_v2). When opd_student_pos is empty (dummy/empty rank): sh=[0,H], the
     kernel loops 0 times -> loss 0, grad 0, but the backbone forward still triggers the collective
     (keeping ranks in sync).
 
-    V34: pass skew_alpha / fkl_lambda / routing thresholds + per-token `opd_tok_weight` (clean-EOS
+    routed-OPD: pass skew_alpha / fkl_lambda / routing thresholds + per-token `opd_tok_weight` (clean-EOS
     reweight) to the kernel; diag samples at both the head and the EOS-region (the latter uses
     opd_seg_lens to slice each traj's tail, adding the leading indicator of length self-amplification).
-    With all V34 knobs at defaults -> kernel behavior is bit-identical back to β OPD.
+    With all routed-OPD knobs at defaults -> kernel behavior is identical to plain β OPD.
     """
     h = self.model(
         input_ids=input_ids, position_ids=position_ids,
@@ -135,7 +135,7 @@ def _compute_diag(sh, lm_w, th, w_rot, labels, temp, cap: int = 512) -> dict:
 
 @torch.no_grad()
 def _compute_eos_diag(sh, lm_w, th, w_rot, seg_lens, eos_id, n_tail, temp, cap: int = 512) -> dict:
-    """EOS-region diagnostics (DEEP_REVIEW §A1 / V34 §2): take the last n_tail tokens of each traj's **tail**
+    """EOS-region diagnostics: take the last n_tail tokens of each traj's **tail**
     (total rows capped), and compute the student's probability mass on EOS, the teacher's -logp on EOS, and
     the tail entropy gap — the leading indicator of length self-amplification (the existing in-loop diag only
     looks at the head of the largest-first pack and never sees the EOS region).
@@ -195,10 +195,10 @@ def _detect_trailing_loop(ids: list[int], period_max: int, min_repeats: int) -> 
 
 
 def _v34_tail_weights(seg_labels, lc, eos_id):
-    """V34 training-side tail handling (on-policy safe, computed from seg.labels=generated token-ids). Returns (labels, weight|None).
+    """routed-OPD training-side tail handling (on-policy safe, computed from seg.labels=generated token-ids). Returns (labels, weight|None).
 
     - tail_loop_mask: label->IGNORE on the degenerate periodic tail (truly excluded, including from num_valid;
-      replaces produce-side whole-traj drop -> keeps the good body of a long solution, DEEP_REVIEW §B1).
+      replaces produce-side whole-traj drop -> keeps the good body of a long solution).
     - clean_eos_reweight: traj tail label==eos (clean termination) -> scale the last K tokens' soft loss ×(1+λ),
       explicitly teaching termination.
     Defaults (tail_loop_mask=False, clean_eos_reweight=0) -> return (original labels, None) -> kernel behavior unchanged.
@@ -219,7 +219,7 @@ def _v34_tail_weights(seg_labels, lc, eos_id):
 
 
 def _setup_fsdp_cpu_offload(model, world, local):
-    """FSDP2 + CPUOffloadPolicy (32B / very long context; borrowed from soft_distill_v2, V27)."""
+    """FSDP2 + CPUOffloadPolicy (32B / very long context; borrowed from soft_distill_v2)."""
     import logging
 
     from torch.distributed.device_mesh import init_device_mesh
@@ -247,7 +247,7 @@ def build_opd_v2_model(cfg: OPDConfig, world: int, local: int):
     if cfg.trainer.grad_ckpt:
         model.gradient_checkpointing_enable(
             gradient_checkpointing_kwargs={"use_reentrant": False, "preserve_rng_state": False})
-    model.train()   # ★ grad-ckpt only triggers when training=True (v1 trap: silent no-op -> OOM)
+    model.train()   # ★ grad-ckpt only triggers when training=True (trap: silent no-op -> OOM)
     if cfg.trainer.cpu_offload:
         model = _setup_fsdp_cpu_offload(model, world, local)
     else:
@@ -257,7 +257,7 @@ def build_opd_v2_model(cfg: OPDConfig, world: int, local: int):
     model._opd_soft = cfg.loss.soft_weight
     model._opd_beta = cfg.loss.beta
     model._opd_temp = cfg.loss.temperature
-    # V34 routed-OPD knobs (kernel defaults = bit-identical back to β OPD)
+    # routed-OPD knobs (kernel defaults = identical to plain β OPD)
     model._opd_skew_alpha = cfg.loss.skew_alpha
     model._opd_fkl_lambda = cfg.loss.fkl_lambda
     model._opd_fkl_top_k = cfg.loss.fkl_top_k
@@ -324,11 +324,11 @@ class OPDTrainerV2:
 
     def __init__(self, cfg: OPDConfig, world: int, local: int, gloo_group=None):
         self.cfg = cfg
-        # DEEP_REVIEW §C1: when MICRO < max_traj the longest traj is silently dropped by pack (no log) -> hard block at startup.
+        # When MICRO < max_traj the longest traj is silently dropped by pack (no log) -> hard block at startup.
         if cfg.trainer.micro_batch_tokens < cfg.data_plane.max_traj_tokens:
             raise ValueError(
                 f"MICRO({cfg.trainer.micro_batch_tokens}) < max_traj_tokens"
-                f"({cfg.data_plane.max_traj_tokens}): the longest traj would be silently dropped (DEEP_REVIEW C1). "
+                f"({cfg.data_plane.max_traj_tokens}): the longest traj would be silently dropped. "
                 f"Adjust MICRO and MAX_TRAJ_TOKENS together, or add a trainer node.")
         self.world, self.local = world, local
         self.rank = int(os.environ.get("RANK", local))
@@ -380,7 +380,7 @@ class OPDTrainerV2:
             dec = decode_teacher_hidden(seg.teacher_packed, seg.teacher_scales, seq_len,
                                         device=dev, hid=HID_DIM)
             th.append(dec[: seg.n_t])
-            # V34: tail-loop mask (label->IGNORE) + clean-EOS reweight (tok_weight). Off by default -> unchanged.
+            # routed-OPD: tail-loop mask (label->IGNORE) + clean-EOS reweight (tok_weight). Off by default -> unchanged.
             seg_labels, seg_w = _v34_tail_weights(seg.labels.to(dev), lc, EOS_ID)
             lab.append(seg_labels)
             seg_lens.append(int(seg_labels.shape[0]))
@@ -399,8 +399,8 @@ class OPDTrainerV2:
             opd_labels=labels, opd_w_rot=self.w_rot, opd_chunk_size=self.cfg.loss.chunk_size,
             opd_tok_weight=(torch.cat(tw) if any_w else None), opd_seg_lens=seg_lens)
         # nt = kernel normalizer = number of valid (non-IGNORE) target tokens (< numel after tail-mask) ->
-        # matches the kernel's num_valid so the global token-mean is correct (== numel on the DEEP_REVIEW C1
-        # path with no IGNORE).
+        # matches the kernel's num_valid so the global token-mean is correct (== numel on the no-IGNORE
+        # path).
         nt = int((labels != IGNORE).sum().item())
         return kw, nt
 
@@ -422,7 +422,7 @@ class OPDTrainerV2:
         return kw, 0
 
     def forward_backward(self, kw: dict, nt: int) -> dict:
-        """1 bin forward -> global token-mean -> 1 backward (mirrors v1, but each rank does a fixed 1 forward).
+        """1 bin forward -> global token-mean -> 1 backward (each rank does a fixed 1 forward).
 
         global token-level objective: FSDP backward divides by world, so all_reduce(SUM) local target tokens
         -> global, scale = world/global -> after averaging this is the true global token-weighted mean. Every
@@ -544,11 +544,11 @@ class OPDTrainerV2:
         return m
 
     def save_weights(self, slot: str | None = None) -> dict:
-        """Parallel sharded HF save (V33, double-buffer _a/_b). Outputs standard HF multi-file shards +
+        """Parallel sharded HF save (double-buffer _a/_b). Outputs standard HF multi-file shards +
         index.json, consumed natively by sglang update_weights_from_disk (zero changes to the flash_rl loader).
 
         gather runs over NCCL(GPU); write-by-owner has each rank write its own subset of tensors in parallel
-        -> 32B drops from ~200s to ~20-30s (hgpn008 4-GPU measured 45s, bit-exact). The bottleneck is
+        -> 32B drops from ~200s to ~20-30s (~45s on 4 GPUs, bit-exact). The bottleneck is
         "rank0 single-point materialization of 65GB + single-threaded write"; this method spreads both across
         the whole world. When GPU headroom is insufficient (collective pre-check, to avoid a mid-collective
         OOM hang) it falls back to the old rank0 single-file consolidated path."""
@@ -646,7 +646,7 @@ class OPDTrainerV2:
             if os.path.isfile(s):
                 shutil.copy2(s, os.path.join(path, fn))
 
-    # ---- durable checkpoint / resume (DCP model+optim+sched; separate from the _a/_b rolling buffer, V32) ----
+    # ---- durable checkpoint / resume (DCP model+optim+sched; separate from the _a/_b rolling buffer) ----
     def save_checkpoint(self, want_hf: bool = True, keep: int = -1) -> dict:
         """Write a durable ckpt to <run>/checkpoints/step_<N>/. Collective across all ranks. Returns {dir, step}.
 

@@ -1,15 +1,15 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""OPD full-vocab divergence loss — Liger fused-linear JSD(β) (PLAN §1/§2, D2/D3).
+"""OPD full-vocab divergence loss — Liger fused-linear JSD(β).
 
 GKD directly-differentiable divergence (not PPO/IS): at every generated position of the student
 rollout, minimize `D_JSD(β)(π_T ‖ π_θ)`. Uses `LigerFusedLinearJSDFunction` to reconstruct both
 sides' logits per-token-chunk and compute the divergence inside the kernel, **without materializing
-[BT,V]** (numerically validated in distill/_liger_jsd_test).
+[BT,V]**.
 
 OPD is pure distillation (the teacher distribution is the target, no ground-truth label):
 weight_hard(CE)=0, weight_soft=1. labels are only used for the ignore mask — prompt/pad positions
 are set to IGNORE and skipped, generated positions get their next-token (the value does not enter
-the loss, it only marks "to be computed"). Liger's mean reduction is length-normalized (D8).
+the loss, it only marks "to be computed"). Liger's mean reduction is length-normalized.
 
 Inputs (assembled on the trainer side; teacher hidden is the rotated-space value from codec.decode,
 paired with W_rot):
@@ -39,7 +39,7 @@ def opd_jsd_loss(student_hidden: torch.Tensor, student_head_w: torch.Tensor,
     # blows up on all ranks). eager chunked is a bit slower but shape-immune.
     """Pure-distillation full-vocab JSD(β), length-normalized scalar.
 
-    arg order matches distill/_liger_jsd_test:
+    arg order:
       apply(x_s, w_s, x_t, w_t, labels, bias_s, bias_t, w_hard, w_soft, beta,
             ignore_index, temperature, compiled, chunk_size, <accum bool>)
     """

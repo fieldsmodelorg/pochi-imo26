@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Robust, self-verifying converter for flaky-memory hosts.
 
-This machine exhibits transient, non-reproducible bit-flips when processing large
-volumes of data (a handful of corrupted bytes per few hundred GB read/written,
-load-correlated; SSD proven clean; likely marginal RAM). A normal single-pass
-conversion therefore cannot be trusted, and a single read-back verification is
-itself corrupted by the same faults.
+Designed for hosts with transient memory corruption under load (non-reproducible
+bit-flips, e.g. a handful of corrupted bytes per few hundred GB read/written). There a
+normal single-pass conversion cannot be trusted, and a single read-back verification
+is itself exposed to the same faults.
 
 Defence: redundancy + retry at small granularity. The source jsonl is ground
 truth. Work is split into small chunks (byte ranges of the source files). For

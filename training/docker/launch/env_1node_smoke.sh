@@ -1,14 +1,14 @@
 # OPD v2 — single-node 8-GPU (4:2:2) end-to-end shakeout. Source before run_1node.sh:
 #   source /opt/opd/launch/env_1node_smoke.sh && bash /opt/opd/launch/run_1node.sh
 #
-# Purpose: prove the full loop works end-to-end (rollout -> teacher hidden-extract -> JSD -> FSDP2 step
-# -> weight sync -> checkpoint) on real hardware before the 64x B200 run. Runs the SAME producer as
+# Purpose: exercise the full loop end-to-end (rollout -> teacher hidden-extract -> JSD -> FSDP2 step
+# -> weight sync -> checkpoint) on one node. Runs the SAME producer as
 # production: the AGENTIC self-play pool (prove/verify/refine/select) seeded from the dsflash dataset.
 # Scaled down: ~57k seq-len (the agentic min_gen_room floor), small batch, ~20 steps. Env-overridable.
 # REQUIRED cluster paths: STUDENT_PATH, DEEPSEEK_V4_FLASH, RUN_DIR (scratch/shared).
 
 # Producer = agentic (her production path). Problems + warm-start proofs come from the seed dataset
-# chankhavu/ycchen-dsflash-proof-distill-v2-test — a byte-faithful, user-owned mirror of Yi-Chia's
+# chankhavu/ycchen-dsflash-proof-distill-v2-test — a public mirror of Yi-Chia's
 # ycchen/dsflash-proof-distill-v2-test (the original is no longer public), built into the pool at runtime by opd_v2.agentic.seed
 # -> needs network on the node (or pre-seed once: python -m opd_v2.agentic.seed --run-dir $RUN_DIR).
 export PRODUCER="${PRODUCER:-agentic}"
@@ -37,11 +37,9 @@ export CONTEXT_LEN="${CONTEXT_LEN:-57344}" MAX_TRAJ_TOKENS="${MAX_TRAJ_TOKENS:-5
 # (100000 < 130816, fine) -- this default only applies to the smaller smoke.
 export AGENTIC_MAX_PROMPT_TOKENS="${AGENTIC_MAX_PROMPT_TOKENS:-$(( MAX_TRAJ_TOKENS / 2 ))}"
 export MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-49152}"
-# MEMFRAC 0.70 here, NOT her 0.82 (set for TP4 replicas in her 8-node V33 on H200): at TP2 each GPU holds twice
-# the fp8 weight share, and the fp8 weight-sync reload peak is ~18-26GB
-# (old fp8 copy + loader clone + bf16 re-quant — see run_agentic_mn_32b.sbatch:73). fp8 weights (~16GB) sit
-# ON TOP of the static KV pool, so at 0.85 the rollout hit 135/140GB (~5GB free) and OOM'd the reload at the
-# first weight-sync. 0.70 leaves ~25GB — the same reload headroom her 0.82 leaves at TP4.
+# MEMFRAC 0.70 here, NOT her 0.82 (set for TP4 replicas): at TP2 the fp8 weights (~16GB/GPU) sit on top of the
+# static KV pool and the fp8 weight-sync reload peaks at ~18-26GB (old fp8 copy + loader clone + bf16 re-quant),
+# so 0.70 leaves the same ~25GB reload headroom her 0.82 leaves at TP4.
 export KV_CACHE_DTYPE="${KV_CACHE_DTYPE:-fp8_e4m3}" SWA_RATIO="${SWA_RATIO:-0.2}" MEMFRAC="${MEMFRAC:-0.70}"
 export TEACHER_CONTEXT_LEN="${TEACHER_CONTEXT_LEN:-61440}" TEACHER_MEMFRAC="${TEACHER_MEMFRAC:-0.78}" TEACHER_MAXRUN="${TEACHER_MAXRUN:-8}"
 export ROLLOUT_N="${ROLLOUT_N:-2}"                 # samples per produce_sample task

@@ -4,5 +4,5 @@ wandb/
 __pycache__/
 *.pyc
 *.egg-info/
-# generated teacher patch (regen from teacher_extract/_patch_sglang.py; same convention as opd/_patched)
+# generated teacher patch (regenerate from teacher_extract/_patch_sglang.py; see README)
 teacher_patch/http_server.py

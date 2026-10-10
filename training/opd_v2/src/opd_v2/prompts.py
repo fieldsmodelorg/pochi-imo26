@@ -1,8 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""prompt source — reuses v1 `opd.prompts.ProblemPromptLoader` (distill_gen proof-problem bank + prover
-template -> student chat template -> input_ids), wrapped as an **infinite** iterator (reshuffle each epoch).
+"""prompt source — reuses `opd.prompts.ProblemPromptLoader` from `_vendor_opd/opd/prompts.py`
+(distill_gen proof-problem bank + prover template -> student chat template -> input_ids), wrapped as an **infinite** iterator (reshuffle each epoch).
 
-OPD rollout needs the prompt's token_ids (token-in-token-out). The v1 loader is already validated, so it is reused directly.
+OPD rollout needs the prompt's token_ids (token-in-token-out); the existing loader is reused directly.
 """
 from __future__ import annotations
 

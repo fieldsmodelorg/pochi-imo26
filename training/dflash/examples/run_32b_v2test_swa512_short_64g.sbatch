@@ -23,7 +23,7 @@
 #   * SWA    = 512 (--window-size 512, swa512 config).
 #   * MAX_STARTS = 8192 (= full position coverage of an 8192 bin -> max learning
 #              per expensive target forward; loss is a weight-normalized MEAN over
-#              starts so this needs NO LR change, confirmed by review).
+#              starts so this needs NO LR change).
 # Requeue-safe (auto-resume from latest.pt); preflight GPU probe excludes wedged
 # nodes. STEPS generous (cheap steps) -> monitor acc, early-stop on plateau.
 #

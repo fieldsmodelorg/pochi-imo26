@@ -1,5 +1,5 @@
 {
-  "_comment": "Long-context 256k anneal mix (2026-06-12). Per-doc position reset means only genuinely long docs exercise long positions, so this mix is proofs-v2-heavy (the only >128k source: proof p50 97.5k / p90 208k, finally seen un-truncated at max_len 262144) plus mid-length long sources and a small short/mid replay against forgetting. UNMATCHED PARTITIONS DEFAULT TO repeat=1, so everything not wanted is explicitly pinned to 0 (data_mix now allows repeat 0 = exclude). Target ~11B tok ~= 660 steps at 262144 x 64 GPU.",
+  "_comment": "Long-context 256k anneal mix. Per-doc position reset means only genuinely long docs exercise long positions, so this mix is proofs-v2-heavy (the only >128k source: proof p50 97.5k / p90 208k, finally seen un-truncated at max_len 262144) plus mid-length long sources and a small short/mid replay against forgetting. UNMATCHED PARTITIONS DEFAULT TO repeat=1, so everything not wanted is explicitly pinned to 0 (repeat 0 = exclude). Target ~11B tok ~= 660 steps at 262144 x 64 GPU.",
   "entries": [
     {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-math-proofs-v2/proof",             "repeat": 2},
     {"root": "nemotron-deepseek-sft-mix-v2", "include": "nemotron-math-proofs-v2/verification",      "repeat": 1},

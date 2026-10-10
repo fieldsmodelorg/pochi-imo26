@@ -1,8 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Global OPD configuration (see ../../PLAN.md §3 decision table).
+"""Global OPD configuration.
 
 All knobs live in one place; the orchestrator, the three services, and the loss all read from
-here. Defaults follow the PLAN's "lowest-risk, maximum-reuse-of-existing-infra" recipe: full-vocab
+here. Defaults follow a lowest-risk, maximum-reuse-of-existing-infra recipe: full-vocab
 via quant-hidden, JSD(β=0.5), Flash teacher, token-in-token-out, disk-based weight sync,
 near-on-policy (bounded max_staleness).
 """
@@ -16,7 +16,7 @@ STUDENT_PATH = os.environ.get("STUDENT_PATH", "/models/olmo3-sink-stage1-v2-7b")
 TEACHER_PATH = os.environ.get("DEEPSEEK_V4_FLASH", "/models/DeepSeek-V4-Flash")
 SGLANG_SIF = os.environ.get("SGLANG_SIF", "/images/sglang.sif")
 HID_DIM = 4096          # Flash / student are both 4096 (JSD compares on vocab logits; hidden dim need not match)
-VOCAB_SIZE = 129280     # teacher == student (verified; see G1)
+VOCAB_SIZE = 129280     # teacher == student
 
 
 @dataclass
@@ -44,7 +44,7 @@ class RolloutCfg:
     """student sglang server (deploy/target olmo2_sink), token-in-token-out."""
     model_path: str = STUDENT_PATH
     tp_size: int = 1
-    temperature: float = 1.0            # D9: rollout diversity
+    temperature: float = 1.0            # rollout diversity
     top_p: float = 0.95                 # nucleus: top_p=1.0 sampling the tail produces junk the teacher can't score effectively
     ignore_eos: bool = False            # used for the 100k smoke; normal training respects EOS by default
     n: int = 4                          # rollouts per prompt
@@ -58,10 +58,10 @@ class RolloutCfg:
 
 @dataclass
 class LossCfg:
-    """Liger fused-linear JSD (D2/D3)."""
+    """Liger fused-linear JSD."""
     beta: float = 0.5                   # 0=forward KL, 0.5=JSD, 1=reverse KL (canonical OPD)
     temperature: float = 1.0            # distillation temperature (teacher/student logits divided by the same value)
-    length_normalize: bool = True       # D8: length-normalized mean over generated tokens
+    length_normalize: bool = True       # length-normalized mean over generated tokens
     chunk_size: int = 1024              # Liger per-token chunk size (does not materialize [L,V])
 
 
@@ -73,12 +73,12 @@ class TrainerCfg:
     adam_beta1: float = 0.9
     adam_beta2: float = 0.95
     weight_decay: float = 0.0
-    weight_sync_every: int = 8          # save weights to the rollout every N steps (D13; finalized after Phase 1 measurement)
+    weight_sync_every: int = 8          # save weights to the rollout every N steps
     micro_batch_tokens: int = 32768
     grad_accum: int = 1
     grad_ckpt: bool = True
-    master_dtype: str = "fp32"          # fp32 master + bf16 compute (see README 2026-06-01)
-    weight_out_dir: str = "/tmp/opd-weights"  # local fast disk; cross-node needs shared storage (see h200-node-small-file-io)
+    master_dtype: str = "fp32"          # fp32 master + bf16 compute
+    weight_out_dir: str = "/tmp/opd-weights"  # local fast disk; cross-node needs shared storage
     mask_easy: bool = False             # experimental, non-canonical: mask positions where teacher-argmax == student-token.
                                         # canonical OPD = RKL mean over all generated tokens; off by default, enable if the data says so
     compute_frac_agree: bool = False    # without cached teacher_top1, per-step argmax does one extra full-vocab
@@ -95,7 +95,7 @@ class OrchestratorCfg:
     """The brain: buffer / staleness / rates."""
     buffer_capacity: int = 4096         # max number of trajectories in the buffer (backpressure)
     buffer_capacity_tokens: int = 8_000_000  # token cap (long-CoT dominated: ~3.3KB/token teacher bytes ~= 26GB RAM)
-    max_staleness: int = 16             # D4: drop trajectories where cur_step - weight_version > this value
+    max_staleness: int = 16             # drop trajectories where cur_step - weight_version > this value
     prompts_per_pull: int = 32          # how many prompts to pull for rollout each time
     train_batch_trajs: int = 8          # trajectories the trainer consumes per step
     long_windowing: bool = True         # window long trajectories exceeding micro_batch_tokens instead of dropping them whole

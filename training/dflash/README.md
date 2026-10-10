@@ -12,7 +12,7 @@ block. The trained draft is served by the inference stack's DFlash patches (`sgl
 | `canonical_fa3_train_prod.py` | **production trainer for the delivered drafts** (canonical block convention: block-0 = the verified token's target embedding, predicts `block_size-1` tokens; weights are drop-in for the stock sglang DFlash worker); checkpoint/resume + `--init-from` warm start |
 | `experiments/canonical_fa3_train.py` | canonical draft model + loss/metrics core, imported by `canonical_fa3_train_prod.py` |
 | `nodup_fa3_train_prod.py` | no-dup-convention production trainer (earlier convention) |
-| `nodup_fa3_train.py` | validated no-dup model + loss/metrics core, imported by both prod trainers |
+| `nodup_fa3_train.py` | no-dup model + loss/metrics core, imported by both prod trainers |
 | `fa3_nodup_attention.py` | no-duplicate full-attention FA3 block used during training |
 | `draft_model_olmo3.py` | the OLMo3-style DFlash draft model |
 | `target_model.py`, `target_utils.py` | frozen target (FSDP2) + embedding/head sharing |

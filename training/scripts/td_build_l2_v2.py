@@ -18,7 +18,7 @@ tool_calls / `tool` role -- NO inline reverse-parse needed, unlike cascade-2):
   nemotron-sft-agentic-v2   {tool_calling,interactive_agent}.jsonl  gen=DeepSeek-V3.2
       domain = file stem ; search.jsonl SKIPPED (no model field, source unclear)
 
-Robustness (host has load-correlated transient memory bit-flips): inputs are huge
+Robustness (for hosts with load-correlated transient memory bit-flips): inputs are huge
 JSONL, so we bundle by byte-range (~1GB). Each bundle is verified THREE independent
 times -- normalize from a first read (writes shards), normalize from an independent
 second read, and read the written shard(s) back -- requiring identical (count, hash-sum);

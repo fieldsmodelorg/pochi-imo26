@@ -28,7 +28,7 @@ class TensorNames(BaseModel):
 
 
 class TransplantConfig(BaseModel):
-    """Everything that was previously hardcoded in omp_transplant.py."""
+    """Transplant configuration (loaded from YAML)."""
 
     base: str                 # local path to base model (weights kept)
     donor_weights: str        # local path to donor weights (only embed/head shards needed)
@@ -122,7 +122,7 @@ def build_matrix(cfg: TransplantConfig, donor_name: str, base_name: str,
     if cfg.centered:
         # mean-center both spaces: pins the implicit mean-row coefficient to 1, so OMP's
         # unconstrained coeff-sum can't scale the dominant (rogue-dim) direction and blow up
-        # output logits for new tokens. Fidelity-neutral; critical for the lm_head. See docs.
+        # output logits for new tokens. Fidelity-neutral; critical for the lm_head.
         md = d_mat[a_d].mean(0, keepdim=True)
         mb = b_mat[a_b].mean(0, keepdim=True)
         idx, coef = batch_omp(d_mat[new_ids] - md, d_mat[a_d] - md, cfg.k,

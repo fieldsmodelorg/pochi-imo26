@@ -2,9 +2,7 @@
 """Attention-sink calibration library: measure where an Olmo3(Sink) model dumps
 its no-op attention mass and derive the per-head `s_aux` warm-start init.
 
-Shared by the production builder (`build_init_model.py`) and the research CLIs
-under `study/`. Method and empirical grounding: docs/attn_sink_study.md
-(§5 drafted-token sinks, §6/§9 s_init derivation, §10 e2e builder).
+Used by build_init_model.py.
 
   measure()         per-layer received-mass / sink-absorption stats (eager probs)
   build_sink_keys() the drafted "sink token" keyset per layer

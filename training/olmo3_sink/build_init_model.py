@@ -14,9 +14,7 @@ intermediate npz):
   5. save the fused checkpoint: olmo3_sink model_type + trust_remote_code
      modules + tokenizer/chat template + sink_provenance.json, and report the
      step-0 LM-loss delta (expect ~+0.03 on a fresh transplant base; the
-     dead-start alternative was measured to never train -- docs §9)
-
-Method, measurements and the gate rationale: docs/attn_sink_study.md §6/§9/§10.
+     scalar dead-start alternative does not train the sinks)
 
 Usage (GPU required; 7B ~15 min, 32B ~1.5 h):
   CUDA_VISIBLE_DEVICES=4 uv run python -m olmo3_sink.build_init_model \

@@ -111,22 +111,21 @@ RUN_NAME=agentic_32b_lc140k_v33  MAX_STEPS=100000  WANDB_PROJECT=opd-v2-agentic
 knobs off**. So her best run is **canonical β=1 reverse-KL OPD**, agentic producer, `length` admission
 filter, 140k ctx / 128k gen, 32B student.
 
-**Cross-check against her run.** Her resolved production config was cross-checked field by field
-against `training/docker/launch/env_v33.sh` (her copy lived in `ycchen/proof-pilot-datasets` →
-`step10-opd-pool-rollouts/agentic_32b_lc140k_v33/config.json`, a repo that is **no longer public**).
-Re-verified by resolving `config.json` from her `run_agentic_mn_32b.sbatch` and from `env_v33.sh` with
-`make_config.py`: the training-relevant fields are identical except three intended deltas —
-1. `trainer.attn`: `olmo3_sink_fa3` → `olmo3_sink_fa2` (the B200 kernel swap; same math, validated parity);
+**`env_v33.sh` vs her config.** `training/docker/launch/env_v33.sh` resolves (via `make_config.py`) to
+the same training-relevant `config.json` fields as her `run_agentic_mn_32b.sbatch`, except three intended
+deltas:
+1. `trainer.attn`: `olmo3_sink_fa3` → `olmo3_sink_fa2` (the B200 kernel swap; same math);
 2. `trainer.checkpoint_every`: 50 → 25 (operational: more frequent durable checkpoints; does not touch the
    loss, optimizer, LR schedule or sampling);
 3. `agentic.seed_source`: `ycchen/dsflash-proof-distill-v2-test` → `chankhavu/ycchen-dsflash-proof-distill-v2-test`
-   (a mirror made while the original was public; the original is no longer public, so its byte-faithfulness
-   can no longer be checked against it).
+   (a mirror of the original, which is no longer public).
 
 The remaining differing fields are cluster paths (`student_path`, `deploy_config_src`, `teacher_path`,
 `problems_parquet`). Her sbatch pointed the trainer at the training-format checkpoint and the rollout at the
 deploy-format one; the presets here use the deploy-format dir for both (transformers rebuilds
-`rope_parameters` from the legacy `rope_scaling`). Confirms β=1 revKL, V34 off, `max_staleness=0`.
+`rope_parameters` from the legacy `rope_scaling`). Her resolved `config.json` lived in
+`ycchen/proof-pilot-datasets` → `step10-opd-pool-rollouts/agentic_32b_lc140k_v33/config.json` (no longer
+public).
 
 Notable non-default choices:
 - `WEIGHT_SYNC_EVERY=4` (not the default 1) — with `TARGET_INFLIGHT=512` and long-CoT gen time, this
@@ -141,9 +140,10 @@ Notable non-default choices:
 (`deploy/make_olmo3sink_deploy.py`) for rollout + weight-sync; pre-seed the pool
 (`python -m opd_v2.agentic.seed --run-dir $RUN`) to avoid headless private-HF auth.
 
-## 4. To reproduce her best run on our cu128/B200 image
+## 4. To reproduce her best run on the cu128/B200 image
 
-Carry the §3 values **verbatim**, changing only the two allowed B200 deltas:
+Use `env_v33.sh`: it carries the §3 values **verbatim** apart from the deltas listed in §3. The two
+B200 kernel substitutions are:
 - `ATTN_IMPL=olmo3_sink_fa2` (trainer sink — B200 has no FA3);
 - rollout `--attention-backend triton` (already the default in `run_rollout.sh`).
 

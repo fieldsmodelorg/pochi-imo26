@@ -20,7 +20,7 @@ norms, embed, lm_head, and the config except num_key_value_heads.
 RoPE note: standard RoPE rotates every head by the *same* position-dependent rotation
 (it depends on position and the within-head dim index, not the head index), so pooling
 pre-RoPE K projections does not mix rotational frames -- the mean-pool is RoPE-safe for
-this architecture. Init quality is still verified empirically (see _gqa_initcheck.py).
+this architecture.
 """
 from __future__ import annotations
 

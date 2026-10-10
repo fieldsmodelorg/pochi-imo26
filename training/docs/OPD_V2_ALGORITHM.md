@@ -1,8 +1,8 @@
 # OPD v2 — algorithm, environment, and rollout (faithful reference)
 
 How Yi-Chia Chen's OPD v2 actually works, read out of the code (`training/opd_v2/`). This is the
-training stage that produces the delivered **OPD-32B** proof model. Nothing here is a proposal — it
-describes her code as-is, so we can port it to cu128/B200 without changing behavior.
+training stage that produces the delivered **OPD-32B** proof model. It describes her code as-is; the
+cu128/B200 image runs the same algorithm.
 
 **One-line summary:** a student (OLMo3-sink) generates proof trajectories on its *own* rollouts inside
 a self-play artifact pool; a frozen **DeepSeek-V4-Flash teacher** scores each trajectory's hidden
@@ -101,19 +101,17 @@ offload for 32B/long-context.
 The **V34 loss package** (skew-KL base, routed top-K FKL, EOS/tail reweight) exists in `LossCfg` but
 **all knobs default to 0/off = bit-identical to naïve β-OPD**; her best run does not use it.
 
-## 5. Weight sync & staleness (her design — kept faithfully)
+## 5. Weight sync & staleness
 
 **Weight sync** (`orchestrator.weight_sync`): every `weight_sync_every` steps the trainer saves a
-checkpoint and each rollout replica reloads it. Her design, restored on our branch:
+checkpoint and each rollout replica reloads it:
 - `pause_generation("in_place")` — in-flight generations **keep running** across the swap;
 - `update_weights_from_disk(flush_cache=False)` — old-weight KV is **not** flushed ("under in_place a
   failed flush asserts and kills the scheduler");
 - best-effort: count successful reloads, advance `weight_version` even on partial failure.
 
 So a trajectory can span two weight versions and reuse old-weight KV — deliberate **semi-on-policy**
-staleness, in line with async-RL practice. (A stricter abort/flush fail-closed *barrier* variant was
-prototyped locally; it changes this behavior and was reverted to stay faithful — preserved on branch
-`wip/weight-sync-barrier` as an explicit opt-in. See [OPD_V2_PARITY_STATUS.md](OPD_V2_PARITY_STATUS.md).)
+staleness, in line with async-RL practice.
 
 **Staleness bound** (`buffer.is_stale`): `max_staleness=0 = disabled` by default → **nothing is ever
 dropped for age.** OPD has no importance ratio (it doesn't store generation logprobs) and the teacher

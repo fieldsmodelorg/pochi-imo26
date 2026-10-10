@@ -12,15 +12,15 @@
 #SBATCH --output=logs/dflash-32b-v2test-phaseL-64g-%j.log
 #
 # Phase L (long-context specialization) for the 32B v2test DFlash draft.
-# Curriculum step 2: warm-start from the Phase S short-context draft (acc 0.64)
+# Curriculum step 2: warm-start from the Phase S short-context draft
 # and specialize on the REAL deployment distribution (long proof generation).
-#   * WARM   = Phase S final.pt (dflash-canonical-32b-v2test-short-ml4096-64g-s12000,
-#              acc 0.64 / pos0 0.86). Loaded before compile; ckpt is compile-agnostic.
+#   * WARM   = Phase S final.pt (dflash-canonical-32b-v2test-short-ml4096-64g-s12000).
+#              Loaded before compile; ckpt is compile-agnostic.
 #   * DATA   = data/l4-dflash32b-opd-dsflash-ml65536 (OPD 32B rollouts, finish_reason
 #              =length filtered, + dsflash-v2-test 65,836 teacher proofs; micro 65536).
 #   * GAMMA  = 20 (was 5): flatten per-position loss decay so pos8/9 get ~2.5x more
 #              weight (exp(-9/20)=0.64 vs exp(-9/5)=0.17). Near positions still
-#              dominate via greedy-prefix gating (train_ratio pos0 0.81 vs pos9 0.24).
+#              dominate via greedy-prefix gating.
 #   * COMPILE= --compile-layers (batched FA3 + torch.compile per draft layer;
 #              long-ctx draft train_s ~4.3->2.4s, draft peak ~68->47GiB). Explicit
 #              though it defaults on. Step 1 pays compile overhead (minutes);
@@ -33,12 +33,10 @@
 set -euo pipefail
 
 # Scrub submit-env pollution: when launched from inside another job/session, sbatch
-# --export=ALL can leak CUDA_VISIBLE_DEVICES (and agent-session env) into this job.
+# --export=ALL can leak CUDA_VISIBLE_DEVICES into this job.
 # A leaked CUDA_VISIBLE_DEVICES makes torch see 0 GPUs -> "CUDA unknown error /
 # devices zero" -> crash in ~30s. MUST precede any srun.
 unset CUDA_VISIBLE_DEVICES CUDA_DEVICE_ORDER || true
-unset CLAUDE_CODE_CHILD_SESSION CLAUDE_CODE_SESSION_ID CLAUDE_CODE_ENTRYPOINT \
-      CLAUDE_CODE_EXECPATH CLAUDECODE CLAUDE_EFFORT AI_AGENT || true
 
 ROOT="${PP_ROOT:-$PWD}"
 cd "$ROOT"

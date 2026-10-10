@@ -1,8 +1,7 @@
 # Olmo-3-1025-7B + DeepSeek-V4-Flash tokenizer (centered-OMP transplant)
 
 > This is the vendored copy of the model card stored alongside the produced model at
-> `/models/Olmo-3-1025-7B-deepseekTok`. Method analysis and the mergekit comparison are in
-> `../../docs/tokenizer/transplant.md`.
+> `/models/Olmo-3-1025-7B-deepseekTok`.
 
 This model replaces the tokenizer/vocabulary of **`allenai/Olmo-3-1025-7B`** with the tokenizer of
 **`deepseek-ai/DeepSeek-V4-Flash`** (vocab 100,278 → 129,280). All transformer body weights keep the
@@ -29,7 +28,7 @@ Training-free tokenizer transplant via Orthogonal Matching Pursuit
 For each output matrix (`embed_tokens` and `lm_head`, each processed independently):
 
 1. **Anchors** = tokens whose string exists in both vocabularies (**59,084** of them), compared by
-   byte-level surface form (both tokenizers share the same `Ġ` byte-mapping, verified via decode).
+   byte-level surface form (both tokenizers share the same `Ġ` byte-mapping).
 2. **Shared tokens** → **copy** the base (Olmo) row verbatim to the new vocab id.
 3. **New tokens** (**70,196** of them, 54.3% of the vocab) → OMP. Express the new token's *donor*
    embedding as a sparse (k=64) linear combination of anchors' donor embeddings; then apply the
@@ -51,8 +50,6 @@ Differences from canonical OMP and their measured impact:
 | Least squares | ridge-free incremental QR | normal-eq + adaptive ridge 1e-3 | fidelity-neutral |
 | **Mean-centering** | none | **yes** | output-logit calibration; fidelity-neutral |
 
-The centered-vs-uncentered and mergekit comparison experiments are in `../../docs/tokenizer/transplant.md`.
-
 ---
 
 ## How it's built
@@ -60,10 +57,10 @@ The centered-vs-uncentered and mergekit comparison experiments are in `../../doc
 - The donor embeddings are extracted from only **2 of 46 shards** (`embed.weight`, `head.weight`, both
   dense `[129280, 4096]` bf16) — about 2 GB, not the full 160 GB.
 - Build code: this package `tokenizer_transplant/`, pure PyTorch, no mergekit dependency (DeepSeek's
-  custom `deepseek_v4` arch is not recognized by mergekit-tokensurgeon — see docs).
+  custom `deepseek_v4` arch is not recognized by mergekit-tokensurgeon).
 - Runtime: ~196 seconds on a single H100 80GB.
 
-Reproduce (from the repo root):
+Reproduce (from `training/`):
 ```bash
 uv run python -m tokenizer_transplant full \
   --config tokenizer_transplant/configs/olmo3_7b__deepseek_v4_flash.yaml
@@ -91,7 +88,7 @@ def add(a, b):            → return a + b\ndef subtract(a, b): return a - b\nde
 The three primary colors are → red, yellow, and blue. These colors are called primary because...
 Q: What is 2+2?\nA:       → 4
 深度学习是一种            → 模式识别技术，它将输入数据映射到输出数据。在机器学习中...
-# (a Chinese prompt "Deep learning is a" -> a fluent Simplified-Chinese continuation; kept verbatim as a real model output)
+# (Chinese prompt "Deep learning is a" -> fluent Simplified-Chinese continuation)
 ```
 
 ---
@@ -113,7 +110,7 @@ Q: What is 2+2?\nA:       → 4
    use `repetition_penalty≈1.3` or sampling for usable output.
 4. **Digits are grouped left-aligned in threes** (`\p{N}{1,3}`, `1000`→`100|0`, `1000000`→`100|000|0`).
    Note this is **identical to Olmo** — Olmo / DeepSeek / Kimi all split digits identically byte-for-byte
-   (exhaustively verified, see `../../docs/tokenizer/comparison.md`), so the transplant **does not change
+   (exhaustive check: `../scripts/number_tok_exhaustive.py`), so the transplant **does not change
    digit handling**. The real weakness is that left-aligned grouping misaligns place-value across lengths
    (the last digit gets isolated), which hurts multi-digit arithmetic — but this is shared by all three
    and cannot be fixed by swapping tokenizers, only mitigated via training data / CoT format.

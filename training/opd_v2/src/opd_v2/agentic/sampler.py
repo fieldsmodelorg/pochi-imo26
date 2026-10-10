@@ -3,13 +3,13 @@
 
 Each atom: pick a role -> assemble context from the pool -> yield a Prompt (token-in-token-out).
 
-**The mix is auto-balanced by fill-fraction, not hand-picked fixed ratios** (PLAN agentic section):
+**The mix is auto-balanced by fill-fraction, not hand-picked fixed ratios**:
 - `fill_fraction(role) = student_count(role) / role_mix_weight(role)`; pick the available role with the
   **lowest fill_fraction** (softmax_temp>0 adds randomness to avoid thrash). -> the four roles lockstep
   toward the role_mix ratios.
 - Within a role, pick the **item with the largest deficit** (verify picks the least-verified proof; refine
   picks a verified-but-under-refined problem) -> spread, **avoiding "generate proofs like crazy, verify
-  can't keep up, un-verified proofs pile up"** (the failure mode the user pointed out).
+  can't keep up, un-verified proofs pile up"**.
 - role_mix 22/44/20/14: verify=2×prove (= the fan-out of 2 verifies per proof) -> verify naturally
   dominates and keeps up with proof.
 
@@ -86,7 +86,7 @@ class PoolSampler:
         available = self.pool.available_roles(self.cfg)
         if not available:
             return None                       # pool is empty (no problems) — the caller should have seeded it
-        counts = self.pool.student_counts()   # O(1), computed once per atom (not recomputed inside the retry loop, P1)
+        counts = self.pool.student_counts()   # O(1), computed once per atom (not recomputed inside the retry loop)
         tried: set = set()
         for _ in range(len(_ORDER) + 1):
             remaining = available - tried

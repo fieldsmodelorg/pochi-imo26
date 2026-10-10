@@ -4,14 +4,14 @@
 # HSDP: FSDP2 8-way shard WITHIN each node x replicate ACROSS the 8 nodes -- per-GPU
 # memory equals the single-node 8-way shard (~130/141 GB with expandable_segments).
 #
-# LR: peak 5e-5, ~500-step warmup (ratio 0.0417, matching the validated 7B recipe),
+# LR: peak 5e-5, ~500-step warmup (ratio 0.0417, matching the 7B recipe),
 # LINEAR decay to 0.1*peak over --max-steps 12000
 # (~1 epoch: 50.4B tok / 4.19M tok/step at 64 GPU). 32B is ~4.3x the 7B FLOPs ->
 # expect ~1.8k tok/s/GPU (~115k global, ~36s/step) -> ~5 days wall-clock = ~5 requeue
 # cycles on a 1-day partition limit; --requeue + --resume continue exactly each time
 # (back up _resume before each manual resubmit -- it is overwritten in place).
-# NB: the fp32 _resume DCP is ~390 GB (master+AdamW); SAVE_MIN=60 (a 30-min cadence
-# outran the NCCL watchdog on the first attempt).
+# NB: the fp32 _resume DCP is ~390 GB (master+AdamW); SAVE_MIN=60 (the fp32 _resume save
+# takes long enough to trip the NCCL watchdog at shorter cadences).
 #   sbatch training/stage1_v2/launch_8node_32b.sbatch              # submit from repo root
 #   MAX_STEPS=20 SAVE_MIN=0 sbatch training/stage1_v2/launch_8node_32b.sbatch  # smoke
 # (the --output log dir must exist before submission: mkdir -p logs/stage1-v2-32b)
@@ -46,8 +46,8 @@ if [ -d "$REDIST" ]; then
   export CUDA_HOME="$REDIST" PATH="$REDIST/bin:$PATH" LD_LIBRARY_PATH="$REDIST/lib64:${LD_LIBRARY_PATH:-}"
 fi
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1 OMP_NUM_THREADS=12
-# 32B at micro 65536 runs ~130/141 GB; expandable_segments prevents the fragmentation
-# creep that OOM'd the first 4-node attempt after ~50 steps.
+# 32B at micro 65536 runs ~130/141 GB; expandable_segments prevents fragmentation creep
+# that OOMs long runs.
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 # NCCL over native IB: set NCCL_IB_HCA / NCCL_SOCKET_IFNAME for your cluster's fabric

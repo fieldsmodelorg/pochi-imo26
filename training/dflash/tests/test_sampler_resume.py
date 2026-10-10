@@ -1,10 +1,10 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """Unit tests for the epoch-resumable stripe iterator (data.epoch_resumable_iter).
 
-Pins the two bugs the rewrite fixed in the old `set_epoch(0)` + `while True:
-yield from dl` loop:
-  (1) every epoch replayed the same permutation (no reshuffle);
-  (2) resuming past one epoch (skip >= per_rank) hung forever yielding nothing.
+Pins two properties:
+  (1) every epoch uses a fresh permutation (reshuffle);
+  (2) resuming past one epoch (skip >= per_rank) continues at the right
+      (epoch, offset) instead of yielding nothing.
 
 Light-weight: no torch.distributed, no trainer import. The local
 ``_FakeResumableSampler`` mirrors ``nodup_fa3_train_prod.ResumableStripeSampler``

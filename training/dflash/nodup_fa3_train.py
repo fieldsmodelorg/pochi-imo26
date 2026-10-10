@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-"""Experimental trainer for all-SWA no-dup FA3 DFlash.
-
-This is still under ``experiments/``, but it is the current validated path for
-replacing the original anchor + FlexAttention trainer with a simpler all-SWA
-layout:
+"""Trainer core for all-SWA no-dup FA3 DFlash (replaces the anchor + FlexAttention
+trainer with a simpler all-SWA layout):
 
   start = last verified token
   Q     = B mask positions at start+1..start+B
@@ -563,7 +560,7 @@ def main():
         )
         with open(os.path.join(args.output_dir, "run_config.json"), "w") as f:
             json.dump(vars(args), f, indent=2, sort_keys=True)
-        # Keep the self-contained modeling code next to the result for audit.
+        # Keep the self-contained modeling code next to the result for reproducibility.
         shutil.copy(__file__, os.path.join(args.output_dir, "nodup_fa3_train.py"))
         shutil.copy(
             os.path.join(HERE, "..", "fa3_nodup_attention.py"),

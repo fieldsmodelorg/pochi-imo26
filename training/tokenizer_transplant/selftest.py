@@ -2,8 +2,7 @@
 
 Holds out a sample of shared anchors, reconstructs them from the rest via the
 same OMP path used in production, and reports cosine to the true base rows.
-Unlike the original (which only tested the uncentered path), this honours
-``cfg.centered`` so it validates exactly what ``run`` ships. Needs the real
+Honours ``cfg.centered`` so it checks exactly what ``run`` ships. Needs the real
 base + donor weights, so it is an opt-in integration check, not a unit test.
 """
 

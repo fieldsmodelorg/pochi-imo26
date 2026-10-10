@@ -14,7 +14,7 @@ This wrapper keeps the useful Liger pattern: compute chunk-local gradients with
 - forcing the log-softmax/KL math to fp32;
 - sharing the student log-probs between hard CE and soft JSD when T=1.
 
-V34 routed-OPD (proof-pilot, see `training/opd_v2/V34_PLAN.md`): the soft term can
+Routed-OPD extension: the soft term can
 additionally do **skew reverse-KL** (mix a little teacher into the RKL reference so
 teacher-near-zero tokens stop blowing up entropy/length), add a **routed top-K
 forward-KL** on high-entropy / overconfident-wrong / severe-outlier tokens, and
@@ -81,7 +81,7 @@ class FusedLinearJSDWithFP32Softmax(torch.autograd.Function):
     def _route_weights(student_log_probs, teacher_log_probs, target_chunk, *,
                        fkl_top_k, high_ent_nats, oc_hs_nats, oc_js, outlier_nll,
                        base_outlier_down, ignore_index):
-        """token routing (advice §2), all detached (the gate is stop-grad). Returns (fkl_gate, base_scale)."""
+        """token routing, all detached (the gate is stop-grad). Returns (fkl_gate, base_scale)."""
         sp = student_log_probs.exp()
         tp = teacher_log_probs.exp()
         h_s = -(sp * student_log_probs).sum(dim=-1)

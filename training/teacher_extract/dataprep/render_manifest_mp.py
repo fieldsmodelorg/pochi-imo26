@@ -35,7 +35,7 @@ for _p in (REPO / "training", THIS_DIR):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-# Reuse the validated single-threaded renderer's logic unchanged.
+# Reuse the single-threaded renderer's logic unchanged.
 from render_manifest import clean_row, encode_row, write_manifest, _git_commit  # noqa: E402
 
 DEFAULT_TOKENIZER = os.environ.get("DEEPSEEK_V4_FLASH", "/models/DeepSeek-V4-Flash")

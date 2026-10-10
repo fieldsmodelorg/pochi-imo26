@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Weighted multi-root data mix for stage-1 v2 (see ../PLAN.md §1).
+"""Weighted multi-root data mix for stage-1 v2.
 
 A mix config (JSON) assigns a `repeat` weight to hive partitions
 (`dataset=<d>/domain=<dom>`) across one or more L2 roots:
@@ -153,11 +153,11 @@ def build_shard_tasks(roots: list[Path], entries: list[dict], epoch: int,
 def assign_tasks(tasks: list[ShardTask], world: int) -> list[list[ShardTask]]:
     """Deterministic size-balanced task assignment: LPT greedy into `world` buckets.
 
-    Round-robin by index proved badly unbalanced (2026-06-05 job 79398): task sizes
-    span ~25x (v1 ~70k-row fat shards vs v2 small shards vs fractional half-windows),
-    so at 64 ranks the lightest rank exhausted its tasks at ~13% of the epoch and the
-    rank-synced MIN-stop ended epoch 0 for everyone. LPT (sort by estimated rows desc,
-    assign to the currently lightest bucket) bounds the imbalance to a few percent.
+    Round-robin by index is badly unbalanced: task sizes span ~25x (v1 ~70k-row fat
+    shards vs v2 small shards vs fractional half-windows), so the lightest rank runs out
+    early and the rank-synced MIN-stop ends the epoch for everyone. LPT (sort by
+    estimated rows desc, assign to the currently lightest bucket) bounds the imbalance
+    to a few percent.
 
     Estimated rows = parquet metadata num_rows x (frac or 1) -- metadata-only, cheap.
     Pure function of (tasks, world): per-rank streams stay deterministic for resume.

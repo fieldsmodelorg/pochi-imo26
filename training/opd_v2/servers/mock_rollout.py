@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Mock rollout sglang server (P0: exercises the data-plane without GPU/real sglang).
+"""Mock rollout sglang server (exercises the data-plane without GPU/real sglang).
 
 Mimics the real rollout server's HTTP contract:
 - POST /generate  {input_ids, sampling_params, stream} -> {output_ids:[...], meta_info:{weight_version}}

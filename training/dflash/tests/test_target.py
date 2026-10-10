@@ -2,7 +2,7 @@
 """Target-side integration tests with real stage1-7b-4n weights (1 GPU, no dist).
 
 Checks:
-  1. olmo3_sink loads with trained sinks intact (tf5 zeroing-bug regression check)
+  1. olmo3_sink loads with trained sinks intact (tf5 _init_weights must not zero them)
   2. hook capture == output_hidden_states on a real L4 bin
   3. _chunked_greedy == direct lm_head argmax
   4. TargetEmbeddingsAndHead rows == checkpoint rows
@@ -41,7 +41,7 @@ def main():
     assert layer_ids == build_target_layer_ids(32, 8), build_target_layer_ids(32, 8)
     target.set_capture_layers(layer_ids, capture_final_norm=True)
 
-    # 1. trained sinks survived loading (regression check for tf5 zeroing bug)
+    # 1. trained sinks survived loading (tf5 _init_weights must not zero them)
     sink_max = max(
         layer.self_attn.sinks.abs().max().item()
         for layer in target.model.model.layers

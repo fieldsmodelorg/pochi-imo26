@@ -1,8 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""shared-FS spool for teacher hidden — v2's core transport fix (fixes v1 P7).
+"""shared-FS transport for teacher hidden.
 
-v1 sent teacher hidden (a single 100k traj = 332MB) over HTTP bytes -> orchestrator RAM -> gloo scatter of
-the whole pickle to every rank, the biggest waste in the pipeline. v2 instead:
+Sending teacher hidden (a single 100k traj = 332MB) over HTTP bytes -> orchestrator RAM -> gloo scatter of
+the whole pickle to every rank would be the biggest waste in the pipeline. Instead:
 
     teacher computes hidden -> **server-side writes it into shared FS (WekaFS /work)** -> returns only a
     handle (tens of bytes) -> orchestrator/buffer/scatter only ever move handles -> **the owning trainer
@@ -13,12 +13,12 @@ orchestrator, never through gloo**.
 
 This file provides:
 - **File format**: a 64-byte self-describing header + payload (`packed || scales || top1`). The file
-  carries its own layout, so the reader does not depend on the handle's metadata (avoids the v1
-  header/handle drift bug).
+  carries its own layout, so the reader does not depend on the handle's metadata (avoids
+  header/handle drift).
 - `HiddenHandle`: on the orchestrator side you only need `{path, seq_len, wv}` (seq_len for buffer token
   accounting, wv for re-validating staleness, path for reading + GC).
 - `write_hidden` / `read_hidden`: teacher-side write (atomic: tmp + rename), trainer-side read.
-- `HiddenStore`: manages the hidden directory, generates unique paths, GC (unlink + background TTL backstop, V14).
+- `HiddenStore`: manages the hidden directory, generates unique paths, GC (unlink + background TTL backstop).
 
 torch-free (the orchestrator, a pure-CPU process, must be able to import it); the payload is raw bytes,
 decode happens on the trainer GPU side.
@@ -97,7 +97,7 @@ def read_hidden(path: str) -> tuple[bytes, bytes, bytes, int, int]:
     """Read a hidden file (called by the owning trainer rank). Returns (packed, scales, top1, seq_len, hid).
 
     The file carries its own layout (does not rely on the handle); on error (GC'd / orphan / half-written) it
-    raises FileNotFoundError/ValueError, which the trainer's collective-safe gate (§6.5) turns into an
+    raises FileNotFoundError/ValueError, which the trainer's collective-safe gate turns into an
     all-ranks skip.
     """
     with open(path, "rb") as f:
@@ -120,7 +120,7 @@ def read_hidden(path: str) -> tuple[bytes, bytes, bytes, int, int]:
 class HiddenStore:
     """Manage one run's hidden directory (shared FS): generate unique paths, GC (unlink + TTL backstop).
 
-    owner = orchestrator (it creates handles, tracks staleness, sends to the trainer, so it owns deletion, V14).
+    owner = orchestrator (it creates handles, tracks staleness, sends to the trainer, so it owns deletion).
     """
 
     def __init__(self, hidden_dir: str):

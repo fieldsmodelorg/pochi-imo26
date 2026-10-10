@@ -1,7 +1,7 @@
 """No-dup FA3 attention used by the all-SWA DFlash trainer.
 
 This module implements the attention pattern used by
-``experiments/nodup_fa3_train.py``:
+``nodup_fa3_train.py``:
 
 * each draft offset attends the original target-hidden context with FA3 local
   attention, so the W-token context window is not materialized per start;
@@ -201,7 +201,7 @@ class _NoDupBatched(torch.autograd.Function):
     (offset = flash batch dim) + batched einsums. Mathematically identical to the
     per-offset reference (forward bit-exact; backward replicated in batched form,
     all 6 grads match to bf16). Far higher MFU: one big op instead of block_size
-    small flash calls + looped eager merge. See DFLASH_ATTENTION_LAYOUT.md.
+    small flash calls + looped eager merge.
     """
 
     @staticmethod

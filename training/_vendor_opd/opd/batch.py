@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Assemble Trajectories into JSD-loss inputs — the position-alignment logic (the core of PLAN §6 G4).
+"""Assemble Trajectories into JSD-loss inputs — the position-alignment logic (G4 alignment).
 
 The sharpest edge: teacher hidden and student hidden must sit on the **same s_t=(x,y_<t)** and
 predict the **same next token y_t**. Alignment definition (matching
@@ -150,7 +150,7 @@ def slice_teacher_hidden(decoded_hidden: torch.Tensor, a: AssembledTraj) -> torc
     return decoded_hidden[: a.teacher_keep]
 
 
-# ---- seq packing (reuses olmo3_sink; TRAINER_DESIGN §7c) ----
+# ---- seq packing (reuses olmo3_sink) ----
 @dataclass
 class Segment:
     """One trajectory inside a packed bin, with absolute-index alignment info (G4)."""

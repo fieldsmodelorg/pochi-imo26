@@ -1,12 +1,12 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Mock teacher sglang server (P0: exercises the data-plane's teacher->FS->handle path without GPU/real sglang).
+"""Mock teacher sglang server (exercises the data-plane's teacher->FS->handle path without GPU/real sglang).
 
-Mimics the v2 teacher /score contract (**write to FS server-side, return handle metadata**, V12):
+Mimics the v2 teacher /score contract (**write to FS server-side, return handle metadata**):
 - POST /score {input_ids, start, out_path, return_top1} -> write random bytes of had+int6 size to out_path,
   return {seq_len, packed_bytes, scales_bytes, top1_bytes}. seq_len = len(input_ids) - start.
 - GET /health -> 200
 
-Key: **bytes do not go back to the orchestrator via the HTTP body**, only JSON metadata (which is exactly what the P7 fix must verify).
+Key: **bytes do not go back to the orchestrator via the HTTP body**, only JSON metadata (which is exactly what the test checks).
 """
 from __future__ import annotations
 

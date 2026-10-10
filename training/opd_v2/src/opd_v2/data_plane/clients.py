@@ -1,12 +1,11 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """async (aiohttp) clients — rollout and teacher sglang servers.
 
-Design principles (PLAN §5.5):
-- **rollout**: `/generate` is one request = one rollout (**no `n`**, V1); **reads `output_ids` directly**
-  (V2, not the v1 return_logprob/logprob_start_len/skip-tokenizer-init hack); `wv` is taken from the
-  server-reported `meta_info.weight_version` (V6).
+Design principles:
+- **rollout**: `/generate` is one request = one rollout (**no `n`**); **reads `output_ids` directly**;
+  `wv` is taken from the server-reported `meta_info.weight_version`.
 - **teacher**: `/score` with an `out_path` -> the teacher **writes to shared FS server-side** and returns
-  handle metadata JSON (**not bytes**, V12). The client assembles a `HiddenHandle` (path created by the
+  handle metadata JSON (**not bytes**). The client assembles a `HiddenHandle` (path created by the
   orchestrator, stamped with the rollout's wv).
 
 Fully async, sharing one `aiohttp.ClientSession` (created by the orchestrator, passed into pool/clients).
@@ -29,7 +28,7 @@ class TeacherError(RuntimeError):
 
 
 class RolloutClient:
-    """token-in-token-out student rollout (fp8 flash_rl deployment; the client does not send load_format, V30/§5.6)."""
+    """token-in-token-out student rollout (fp8 flash_rl deployment; the client does not send load_format, see flash_rl/README.md §5.2)."""
 
     def __init__(self, session: aiohttp.ClientSession, base_url: str):
         self.s = session
@@ -87,7 +86,7 @@ class RolloutClient:
             fr = fr.get("type")
         return list(out), wv, (fr if isinstance(fr, str) else None)
 
-    # ---- weight sync (orchestrator-driven; parallel across all replicas, V22) ----
+    # ---- weight sync (orchestrator-driven; parallel across all replicas) ----
     async def pause_generation(self, mode: str = "in_place", timeout: float = 120.0) -> dict:
         async with self.s.post(f"{self.base}/pause_generation", json={"mode": mode},
                                timeout=aiohttp.ClientTimeout(total=timeout)) as r:
@@ -104,7 +103,7 @@ class RolloutClient:
     async def update_weights_from_disk(self, path: str, weight_version: int,
                                        flush_cache: bool = False, timeout: float = 1800.0) -> dict:
         """flush_cache=False for in_place pause (required: under in_place a failed flush asserts and kills the scheduler).
-        **Do not send load_format**: keeps the server's flash_rl fp8 loader (sending auto goes through DefaultLoader and blows up, §5.6)."""
+        **Do not send load_format**: keeps the server's flash_rl fp8 loader (sending auto goes through DefaultLoader and blows up, see flash_rl/README.md §5.2)."""
         payload = {"model_path": path, "flush_cache": flush_cache,
                    "weight_version": str(weight_version)}
         async with self.s.post(f"{self.base}/update_weights_from_disk", json=payload,
@@ -114,7 +113,7 @@ class RolloutClient:
 
 
 class TrainerHTTPClient:
-    """orchestrator -> trainer-as-service (rank-0 HTTP ingress). Control plane, small data + handle (V23)."""
+    """orchestrator -> trainer-as-service (rank-0 HTTP ingress). Control plane, small data + handle."""
 
     def __init__(self, session: aiohttp.ClientSession, base_url: str):
         self.s = session
@@ -157,7 +156,7 @@ class TrainerHTTPClient:
 
 
 class TeacherClient:
-    """DeepSeek-V4-Flash teacher scoring (/score writes shared FS, returns a handle, V12)."""
+    """DeepSeek-V4-Flash teacher scoring (/score writes shared FS, returns a handle)."""
 
     def __init__(self, session: aiohttp.ClientSession, base_url: str):
         self.s = session
@@ -177,7 +176,7 @@ class TeacherClient:
 
         Response JSON: `{seq_len, packed_bytes, scales_bytes, top1_bytes}` (the file is already on FS). The
         client assembles `HiddenHandle(path=out_path, seq_len, wv)` — the bytes never pass through the
-        orchestrator (P7 fix).
+        orchestrator.
         """
         payload = {"input_ids": input_ids, "start": start, "out_path": out_path,
                    "return_top1": return_top1}

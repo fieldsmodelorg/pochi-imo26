@@ -6,15 +6,14 @@ the trainer's streaming path did per-rank at run time -- mix weighting (repeat +
 fractional hash window), L3 render+mask, right-truncation to --max-len, greedy
 packing into --micro-len rows -- is done ONCE here, with a GLOBAL row shuffle, and
 written as fixed-shape records. The trainer then reads bins by a seeded global index
-striped across ranks, which structurally removes the failure modes hit on 2026-06-05:
+striped across ranks. This removes, by construction:
 
-  * rank data imbalance (epoch ended when the lightest rank ran dry -- 13% / 67%
-    utilization): bins are identical-cost units, every rank gets ceil/floor(N/world).
-  * loss-curve nonstationarity (per-rank sequential shard walk): the global shuffle
+  * rank data imbalance (an epoch ends when the lightest rank runs dry): bins are
+    identical-cost units, every rank gets ceil/floor(N/world).
+  * per-rank loss nonstationarity (per-rank sequential shard walk): the global shuffle
     makes every bin an iid sample of the mix.
-  * malformed upstream rows: dropped (loudly) at build time, not at step 455 of a
-    64-GPU run.
-  * train-time tokenizer CPU + replay-based resume: gone (bin cursor arithmetic).
+  * train-time malformed-row failures: bad rows are dropped (loudly) at build time.
+  * train-time tokenizer CPU + replay-based resume: replaced by bin cursor arithmetic.
 
 Layout of <out>/:
   meta.json        params, counts, per-partition token shares, mix fingerprint

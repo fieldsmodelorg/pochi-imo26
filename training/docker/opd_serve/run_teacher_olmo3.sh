@@ -32,7 +32,7 @@ if [ -d /opt/cuda13-compat ]; then
 fi
 
 # --- persistent JIT compile cache (opt-in) — see run_teacher.sh for the full note ---------------------
-# Set JIT_CACHE_DIR to a durable shared-FS path (Beaker Weka) so DeepGEMM/flashinfer/sglang/tvm-ffi
+# Set JIT_CACHE_DIR to a durable shared-FS path so DeepGEMM/flashinfer/sglang/tvm-ffi
 # compile caches persist across runs + instances. Unset -> default ~/.cache (unchanged). Arch+role scoped.
 if [ -n "${JIT_CACHE_DIR:-}" ]; then
   _ccap=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d '. ') || true

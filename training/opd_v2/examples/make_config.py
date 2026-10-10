@@ -36,7 +36,7 @@ def main():
     # admission filter: comma-sep finish_reason; matches are dropped right after generation, before the training buffer
     # (default "length"=window truncation; "" = disabled). Doesn't touch the rollout sampling distribution, only rejects samples from the gradient.
     # ⚠️ use os.environ.get sentinel (not _env's `or`): DROP_FINISH_REASONS="" is a valid value (=disabled),
-    #    `or` would treat the empty string as unset and wrongly fall back to the default (V34 wants it empty, handled by trainer tail-mask instead).
+    #    `or` would treat the empty string as unset and wrongly fall back to the default (empty when the trainer tail-mask is used instead).
     _dfr = os.environ.get("DROP_FINISH_REASONS")
     if _dfr is not None:
         cfg.rollout.drop_finish_reasons = tuple(x for x in _dfr.split(",") if x)
@@ -81,7 +81,7 @@ def main():
     # loss
     cfg.loss.beta = _envf("BETA", cfg.loss.beta)
     cfg.loss.chunk_size = _envi("CHUNK_SIZE", cfg.loss.chunk_size)
-    # V34 routed-OPD (all default to 0/off = back to naive β; see training/opd_v2/V34_PLAN.md)
+    # routed-OPD (all default to 0/off = back to naive β)
     cfg.loss.skew_alpha = _envf("SKEW_ALPHA", cfg.loss.skew_alpha)
     cfg.loss.fkl_lambda = _envf("FKL_LAMBDA", cfg.loss.fkl_lambda)
     cfg.loss.fkl_top_k = _envi("FKL_TOP_K", cfg.loss.fkl_top_k)
@@ -129,7 +129,7 @@ def main():
     print(f"  rollout={len(cfg.rollout.urls)} replicas, teacher={len(cfg.teacher.urls)} replicas, "
           f"micro={cfg.trainer.micro_batch_tokens} batch_trajs={cfg.trainer.train_batch_trajs} "
           f"wsync_every={cfg.trainer.weight_sync_every} beta={cfg.loss.beta} max_steps={cfg.trainer.total_steps}\n"
-          f"  V34 loss: skew_alpha={cfg.loss.skew_alpha} fkl_lambda={cfg.loss.fkl_lambda} "
+          f"  routed-OPD loss: skew_alpha={cfg.loss.skew_alpha} fkl_lambda={cfg.loss.fkl_lambda} "
           f"clean_eos_reweight={cfg.loss.clean_eos_reweight} tail_loop_mask={cfg.loss.tail_loop_mask} "
           f"drop_finish={cfg.rollout.drop_finish_reasons}\n"
           f"  checkpoint_every={cfg.trainer.checkpoint_every} keep={cfg.trainer.checkpoint_keep} "

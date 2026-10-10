@@ -1,9 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
 """Stage-1 SFT entrypoint for the FMI Singularity *train variant* (v2, single-source layout).
 
-v2 of `training/stage1/` (archived). The trainer is the validated stage-1 trainer, ported
-unchanged except for imports: shared modules are imported from their canonical top-level
-homes (`olmo3_sink/`, `train_core/`) instead of a vendored snapshot. The container still
+Shared modules are imported from their canonical top-level homes (`olmo3_sink/`,
+`train_core/`) instead of a vendored snapshot. The container still
 gets a flat self-contained /app -- materialized at packaging time by `make_pkg.py` from
 `pkg.manifest` (see ../README.md).
 
@@ -30,8 +29,6 @@ Parallelism is torchrun-env driven:
                        (a 2-D device mesh). Grads all-reduce across nodes, params/optim
                        all-gather stays on NVLink. Single-node is the degenerate 1-D case
                        of the same code path. The 3x8 H200 target is M=3, N=8.
-
-See training/stage1/README.md and repo docs/train_bench.md for the throughput recipe.
 """
 from __future__ import annotations
 
@@ -67,13 +64,10 @@ from train_core.l3_render import IGNORE, render_and_mask
 # ---- CONSTANTS ----
 ATTN_IMPL = "olmo3_sink_fa3"  # in-kernel FA3 sink (container builds patched FA3); "eager" is the no-FA3 reference
 SINK_INIT = 0.0               # learnable per-head sink logit init -- ONLY fills sinks missing from
-                              # the checkpoint. Post-mortem of both stage-1 runs (10k steps each):
-                              # init 0.0 is in practice a DEAD start (sinks moved <=0.06, absorb
-                              # 0.07% -- the probe's "250x larger gradient than -10" is real but
-                              # still ~6.5 nats below the drafted-token dump level; see
-                              # docs/attn_sink_study.md §9). Preferred path: a fused checkpoint
-                              # from olmo3_sink.build_init_model with measured per-head warm-start
-                              # sinks BAKED into the weights (this constant is then irrelevant).
+                              # the checkpoint. Init 0.0 is effectively a dead start for SFT-time
+                              # sink injection; prefer a checkpoint from
+                              # olmo3_sink.build_init_model with per-head warm-start sinks baked
+                              # into the weights (this constant is then irrelevant).
 SHUFFLE_BUF = 256             # examples per length-packing window (also the shuffle window)
 PREFETCH_BINS = 16            # packed bins kept ready in the background prefetch queue
 
@@ -90,12 +84,10 @@ def setup_distributed() -> tuple[int, int, int]:
         torch.cuda.set_device(local)
         # device_id binds the PG to this rank's device (enables NCCL comm-init and silences
         # the barrier() device-context warning); required well-formed for FSDP2 collectives.
-        # timeout: the default 10-min NCCL watchdog killed the 32B 56-rank run during its
-        # FIRST periodic DCP save (2026-06-05 job 79388, ALLREDUCE NumelIn=1 = the post-save
-        # barrier/step-sync): a ~390 GB fp32 master+optim checkpoint to WekaFS can keep
-        # straggler ranks writing >10 min while finished ranks wait in the next collective.
-        # 60 min tolerates giant saves; real hangs then take 1 h to surface, acceptable for
-        # a checkpointed --requeue run.
+        # 60-min NCCL timeout (default is 10 min): a ~390 GB fp32 master+optim DCP save can
+        # keep straggler ranks writing >10 min while finished ranks wait in the next
+        # collective. Real hangs then take 1 h to surface, acceptable for a checkpointed
+        # --requeue run.
         timeout = datetime.timedelta(minutes=int(os.environ.get("DIST_TIMEOUT_MIN", "60")))
         torch.distributed.init_process_group(
             "nccl", device_id=torch.device(f"cuda:{local}"), timeout=timeout)
@@ -149,7 +141,7 @@ def build_model(model_path: str, *, attn: str = ATTN_IMPL, liger: str | bool = T
     On the FSDP path we load fp32 and rely on MixedPrecisionPolicy(param_dtype=bf16) to cast
     to bf16 for compute -> fp32 master + bf16 compute (avoids the bf16 "stale weights" lost-
     update problem; ~same speed, better convergence). bf16 keeps the old all-bf16 behaviour.
-    Uses the throughput-validated olmo3_sink config (learnable sink + Liger kernels).
+    Uses the olmo3_sink config (learnable sink + Liger kernels).
     """
     register_olmo3_sink()
     d = AutoConfig.from_pretrained(model_path).to_dict()
@@ -160,13 +152,13 @@ def build_model(model_path: str, *, attn: str = ATTN_IMPL, liger: str | bool = T
     model = AutoModelForCausalLM.from_pretrained(
         model_path, config=cfg, dtype=master_dtype, attn_implementation=attn)
     # Record the sink init this run actually got. SINK_INIT only fills sinks MISSING from
-    # the checkpoint; fused models (olmo3_sink.build_init_model: measured per-head warm
-    # start baked into the weights -- docs/attn_sink_study.md §9/§10) ship their own and
-    # must arrive intact here (canary for the tf5 _init_weights zeroing bug, fixed 20c49d8).
+    # the checkpoint; fused models (olmo3_sink.build_init_model: per-head warm start baked
+    # into the weights) ship their own and must arrive intact here (canary for the tf5
+    # _init_weights sink-zeroing behavior).
     with torch.no_grad():
         sk = torch.stack([l.self_attn.sinks.float() for l in model.model.layers])
     kind = ("baked warm-start" if sk.abs().max() > 1.0 else
-            f"scalar init {SINK_INIT}: measured-dead for SFT injection (docs §9), "
+            f"scalar init {SINK_INIT}: measured-dead for SFT injection, "
             f"prefer a build_init_model fused checkpoint")
     logger.info(f"sinks at load: mean {sk.mean():+.3f} min {sk.min():+.3f} "
                 f"max {sk.max():+.3f} ({kind})")
@@ -256,8 +248,8 @@ def iter_examples(dataset_paths: list[Path], mix_entries: list[dict], tokenizer,
 
     tasks = build_shard_tasks(dataset_paths, mix_entries, epoch)
     # Size-balanced (LPT) assignment, NOT index round-robin: task sizes span ~25x and the
-    # rank-synced MIN-stop ends the epoch when the LIGHTEST rank runs dry -- round-robin
-    # truncated epoch 0 at 13% on 64 ranks (job 79398). Within-rank order is epoch-shuffled.
+    # rank-synced MIN-stop ends the epoch when the LIGHTEST rank runs dry, so round-robin
+    # would truncate the epoch. Within-rank order is epoch-shuffled.
     my_tasks = assign_tasks(tasks, world)[rank]
     if shuffle:
         random.Random(1234 + epoch).shuffle(my_tasks)
@@ -279,14 +271,12 @@ def iter_examples(dataset_paths: list[Path], mix_entries: list[dict], tokenizer,
                     msgs = json.loads(msgs_col[i].as_py())
                     traw = tools_col[i].as_py()
                     tools = json.loads(traw) if traw else None
-                    # check_roundtrip=False in the hot path: the L3 render is verified offline
-                    # by _l3_test.py; re-running encode_messages per row would ~2x tokenize cost.
+                    # check_roundtrip=False in the hot path: re-running encode_messages per row
+                    # would ~2x tokenize cost.
                     rendered, _why = render_and_mask(msgs, tools, tokenizer, check_roundtrip=False)
                 except Exception as e:  # noqa: BLE001 -- malformed upstream row
-                    # Skip loudly, never die: a multi-million-row public mix has a tail of
-                    # broken rows (observed 2026-06-05 job 79383: a row with a corrupted
-                    # role string 'system\n{prompt_style.system_prompt}<|im_end|>' killed
-                    # all 64 ranks at step ~455 via render_message's Unknown-role raise).
+                    # Skip malformed rows loudly, never die: a large public mix has a tail of
+                    # broken rows (e.g. corrupted role strings that make render_message raise).
                     # Same policy as the L2 build's NUL-line skip: count + sample-log.
                     render_errors += 1
                     if render_errors <= 5:
@@ -338,8 +328,8 @@ def iter_l4_bins(root: Path, meta: dict, rank: int, world: int, epoch: int,
     seg_lens = np.fromfile(root / "seg_lens.i32", dtype=np.int32)
     # Cost-balanced step groups: bins are equal-token but attention cost ~ sum(len^2)
     # varies ~3x across bins; with one bin per rank per step and per-layer FSDP
-    # collectives, every step runs at the cost of its most expensive bin (measured
-    # 2.9x ideal on the lc256k run, 2026-06-12). Sort bins by cost, take consecutive
+    # collectives, every step runs at the cost of its most expensive bin (up to ~3x
+    # ideal). Sort bins by cost, take consecutive
     # groups of `world` (cost-homogeneous steps), shuffle group order per epoch;
     # rank r consumes the r-th bin of each group. Identical on every rank; drops
     # the N % world cheapest-tail bins.
@@ -561,8 +551,7 @@ def save_resume(model, optimizer, scheduler, step: int, epoch: int, bins_consume
     # an NCCL reduce_scatter/scatter_object for its save plan; with the caching allocator holding
     # most of HBM (the ~130 GB fp32-32B model-load transient stays reserved even after sharding),
     # NCCL's fresh buffer cudaMalloc fails -> "NCCL WARN Cuda failure 2 'out of memory'" *during
-    # the checkpoint*, not during training. empty_cache frees the headroom NCCL needs. (Observed:
-    # 76852 trained fine 50+ steps at micro_len 65536, then OOM'd at the first 30-min save.)
+    # the checkpoint*, not during training. empty_cache frees the headroom NCCL needs.
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     if world > 1:
@@ -756,9 +745,9 @@ def train(
     # KV heads differ. Matching the final pre-lm_head hidden state pins the student to the
     # teacher's representation (=> its logits, since lm_head is shared) with a dense signal
     # and no [S, vocab] logit materialization. Teacher runs replicated per rank (not FSDP),
-    # forward-only, logits_to_keep=1 to skip ITS logits. (2026-06-13: 32->8 KV heads are
-    # ~orthogonal, so pooling can't give a good init; the gap closes via uptrain, and this
-    # teacher signal closes it further than LM CE alone -- see docs/gqa_conversion.md.)
+    # forward-only, logits_to_keep=1 to skip ITS logits. (32->8 KV heads are near-orthogonal,
+    # so mean-pooling gives a weak init; this teacher signal closes the gap faster than LM
+    # CE alone.)
     teacher = None
     _hid: dict = {}
     if distill_teacher:
@@ -975,9 +964,8 @@ def train(
             # RANK-SYNC the wall-clock trigger. Each rank reads its OWN clock; when the
             # save-interval boundary lands inside the few-ms inter-rank step skew, part of
             # the world enters dcp.save's collectives while the rest enters the next step's
-            # forward all-gather -> mismatched collectives -> permanent spin (root cause of
-            # jobs 79388 [watchdog ALLREDUCE NumelIn=1 after 600s] and 79786 [40-min stall,
-            # ranks in R-state NCCL busy-wait, empty _resume]). MAX-reduce makes the
+            # forward all-gather -> mismatched collectives -> permanent spin (watchdog timeout,
+            # or ranks stuck in NCCL busy-wait with an empty _resume). MAX-reduce makes the
             # decision unanimous; one extra 4-byte allreduce per step is noise.
             if world > 1 and save_minutes:
                 t = torch.tensor([1.0 if by_time else 0.0], device=device)
@@ -1023,8 +1011,7 @@ def main() -> None:
     # first forward; with many ranks sharing one cache dir on a distributed FS (WekaFS ~/.triton)
     # the concurrent cold compile races on the .cubin atomic-rename/visibility and dies with
     # `FileNotFoundError: .../_triton_rope.cubin`. A unique node-local dir per rank removes the
-    # race entirely (tiny one-time recompile per rank). Set before any kernel launch. Observed
-    # on the 32B 4-node run (32 ranks cold-compiling at once); 7B didn't hit it (cache pre-warmed).
+    # race entirely (tiny one-time recompile per rank). Set before any kernel launch.
     os.environ.setdefault(
         "TRITON_CACHE_DIR",
         f"/tmp/triton_{os.environ.get('SLURM_JOB_ID', 'x')}_{os.environ.get('RANK', '0')}")

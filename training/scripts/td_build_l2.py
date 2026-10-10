@@ -12,7 +12,7 @@ L2 schema (one row per sample), partitioned dataset=<d>/domain=<dom>/:
 
 Tokenizer-independent; training renders via encoding_dsv4.encode_messages.
 
-Robustness (host has load-correlated transient memory bit-flips): each output shard is
+Robustness (for hosts with load-correlated transient memory bit-flips): each output shard is
 a BUNDLE of consecutive same-partition L1 parts (~1GB). For each bundle we derive the
 per-row canonical-hash SUM three independent times -- normalize from a first source read
 (and write the shard), normalize from an independent second source read, and read the

@@ -44,10 +44,8 @@ From: pytorch/pytorch:2.9.1-cuda12.8-cudnn9-devel
     # shadowed on PATH by a host bind-mount). GPU count: --num_gpus if given, else
     # CUDA_VISIBLE_DEVICES, else all visible devices.
     #
-    # MULTI-NODE (e.g. 3x8 H200) is NOT wired here: it needs a real rendezvous
-    # (MASTER_ADDR/MASTER_PORT/NNODES/NODE_RANK) that depends on how FMI launches across
-    # nodes -- confirm with FMI, then set --rdzv-endpoint/--nnodes/--node-rank below. The
-    # train.py code path (HSDP 2-D mesh) is already implemented and only needs the launcher.
+    # Multi-node launch is not wired in this %runscript; train.py supports HSDP given a
+    # rendezvous (MASTER_ADDR/MASTER_PORT/NNODES/NODE_RANK -> --rdzv-endpoint/--nnodes/--node-rank).
     NPROC="$(python - "$@" <<'PY'
 import os, sys
 n = None

@@ -17,9 +17,8 @@ H200 so both GPUs run one code path:
 | rollout attn | FA3 default (honors sink) | **`--attention-backend triton`** — honors the sink in **prefill *and* decode**; flashinfer drops it |
 | teacher MoE | marlin (Hopper fp4) | auto-detected in `run_teacher.sh`: `flashinfer_mxfp4` on sm_100, `auto`→marlin on Hopper |
 
-Numerics are validated fp64-exact vs eager and bit-exact on the OPD JSD loss. The rollout sglang uses
-Yi-Chia's patched sources, re-anchored to the **0.5.14** release. Full parity matrix:
-[`../docs/OPD_V2_PARITY_STATUS.md`](../docs/OPD_V2_PARITY_STATUS.md).
+The rollout sglang uses Yi-Chia's patched sources, re-anchored to the **0.5.14** release. Full parity matrix:
+[`../docs/OPD_V2_CU128_PARITY.md`](../docs/OPD_V2_CU128_PARITY.md).
 
 ## Build
 
@@ -45,9 +44,17 @@ DOCKER_BUILDKIT=1 docker build -f training/docker/Dockerfile.ycchen-opd -t ycche
 
 Base: `chankhavu/olmo3-olmocore:cu128-fa2-sink`, pinned by digest (`sha256:e67d3894…`, the exact base of the
 published run image) — torch 2.10+cu128, flash_attn 2.8.x, olmo_core; override with `--build-arg BASE=...`.
+Its recipe is [`base/Dockerfile`](base/Dockerfile) (CUDA 12.8.1, source-built FA2 for sm_86/90/100/120 + FA3,
+TransformerEngine 2.9, OLMo-core from `hav4ik/OLMo-core@8309083`; packages pinned by `base/constraints-base.txt`):
+
+```bash
+DOCKER_BUILDKIT=1 docker build -f training/docker/base/Dockerfile -t olmo3-olmocore:cu128-fa2-sink training/docker/base
+DOCKER_BUILDKIT=1 docker build -f training/docker/Dockerfile.ycchen-opd \
+  --build-arg BASE=olmo3-olmocore:cu128-fa2-sink -t ycchen-opd:cu128 .
+```
+
 Python packages are pinned by `constraints-train.txt` / `constraints-serve.txt`, frozen from the published run image
-`chankhavu/ycchen-opd@sha256:908516a7…`; a fresh resolve of the serve venv against them reproduces all 193
-packages at the published versions. The build self-verifies both venvs (trainer imports + sink
+`chankhavu/ycchen-opd@sha256:908516a7…`. The build self-verifies both venvs (trainer imports + sink
 registration + math_3r prompts; sglang serve patches incl. the hybrid-SWA KV-pool patch; teacher
 hidden-extract patches). In the image the repo lives at `/opt/opd/repo` (same layout as here).
 
@@ -56,6 +63,8 @@ hidden-extract patches). In the image the repo lives at `/opt/opd/repo` (same la
 | path | purpose |
 |---|---|
 | `Dockerfile.ycchen-opd` | the image (two venvs: base trainer/orchestrator, `/opt/venv/serve` sglang 0.5.14) |
+| `base/Dockerfile` | recipe of the base image (`chankhavu/olmo3-olmocore:cu128-fa2-sink`) |
+| `constraints-{train,serve}.txt` | exact package versions of the two venvs |
 | `launch/` | multi-node slurm launcher + `opd_v2.sbatch` + env presets → [`launch/README.md`](launch/README.md) |
 | `opd_serve/run_teacher.sh` | DeepSeek-V4-Flash `/score` teacher (hidden-state extraction → shared FS) |
 | `opd_serve/run_rollout.sh` | student rollout (fp8 + flash_rl loader; `--attention-backend triton`) |

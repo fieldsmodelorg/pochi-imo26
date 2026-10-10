@@ -24,8 +24,8 @@ Three changes
    `full_attention` layers; `sliding_attention` layers use default unscaled RoPE
    (so it was pretrained, so vLLM serves it, and so transformers 4.57 ran it).
    The transformers v5 RoPE refactor (huggingface/transformers#39847) regressed
-   this to one global scaled `rotary_emb` for every layer; the pinned 5.9.0 (and
-   main as of 2026-06) is affected. We restore the 4.57 behavior here, mirroring
+   this to one global scaled `rotary_emb` for every layer; the pinned 5.9.0 is
+   affected. We restore the 4.57 behavior here, mirroring
    the open upstream fix huggingface/transformers#45945: `rotary_embs` ModuleDict
    with `sliding_attention` forced to `rope_type="default"`, dispatched per
    `config.layer_types[i]` in `Olmo3SinkModel.forward`. Drop this override once

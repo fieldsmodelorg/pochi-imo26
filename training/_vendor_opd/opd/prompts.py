@@ -1,7 +1,7 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""A "prompt-only" loader (PLAN §3 D11, §7 Phase 0).
+"""A "prompt-only" loader.
 
-OPD rollouts need the **prompt token_ids** (token-in-token-out, D12): read the OpenAI-style
+OPD rollouts need the **prompt token_ids** (token-in-token-out): read the OpenAI-style
 `messages` from the L2 parquet, take everything up to the first assistant (system + user turns), and
 render it into input_ids for the rollout server using the **student's chat template**
 (`add_generation_prompt=True`). All answer/assistant content is discarded — OPD learns on the
@@ -124,7 +124,7 @@ class PromptLoader:
 # Problem-pool loader (distill_gen/problems/problems.parquet, 9,834 deduplicated olympiad proof problems)
 # ============================================================================
 # The prompt corpus used for real OPD training: apply a prover template to the problem text -> student
-# chat template -> input_ids. Rotates through the same 3 prover styles as distill_gen (diversity D11).
+# chat template -> input_ids. Rotates through the same 3 prover styles as distill_gen (diversity).
 # A template with {problem} -> a single user message; without it (imo25) -> template as system, problem
 # as the user turn. **Use .replace, not .format** (dsmv2 contains literal braces like \boxed{...}).
 

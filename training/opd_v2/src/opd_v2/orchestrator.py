@@ -72,7 +72,7 @@ class Orchestrator:
             connector=aiohttp.TCPConnector(limit=0, limit_per_host=0))
         self.rollout_pool, self.teacher_pool = build_pools(self._session, self.cfg)
         self.rollout_clients = [r.client for r in self.rollout_pool.replicas]
-        # rollout dump (stores all rollouts -> dflash-native parquet; side channel, decoupled from hidden GC, V31)
+        # rollout dump (stores all rollouts -> dflash-native parquet; side channel, decoupled from hidden GC)
         rd = self.cfg.rollout_dump
         if rd.enabled:
             from opd_v2.rollout_store import RolloutDumpWriter
@@ -84,7 +84,7 @@ class Orchestrator:
                             "student": self.cfg.trainer.student_path,
                             "teacher": self.cfg.trainer.teacher_path})
             self.dump.start()
-        # producer selection (V33): single_round (single-turn prover OPD, default) vs agentic (pool-based multi-role).
+        # producer selection: single_round (single-turn prover OPD, default) vs agentic (pool-based multi-role).
         # The only difference = prompt source (iterator) + whether produce carries pool write-back;
         # atom/scheduler/buffer/trainer/teacher/loss/weight-sync are all shared, zero changes (producer is a DI seam).
         if self.cfg.producer == "agentic":
@@ -120,7 +120,7 @@ class Orchestrator:
             self.pool_ingest.start()
             self.sampler = PoolSampler(self.cfg, self.pool, builder)
             prompts = self.sampler.iter_forever()
-            n_samples = 1                              # agentic: multiplicity is handled by the sampler (not v1 fan-out)
+            n_samples = 1                              # agentic: multiplicity is handled by the sampler (not n_samples fan-out)
             produce_fn = functools.partial(
                 produce_sample, rollout_pool=self.rollout_pool, teacher_pool=self.teacher_pool,
                 store=self.store, cfg=self.cfg, default_wv=lambda: self.weight_version,
@@ -163,7 +163,7 @@ class Orchestrator:
         raise TimeoutError("rollout/teacher not healthy in time")
 
     async def _discover_trainer(self, timeout: float = 1800.0):
-        """Read the shared-FS endpoint file (V20) -> build the trainer client -> wait for /health."""
+        """Read the shared-FS endpoint file -> build the trainer client -> wait for /health."""
         t0 = time.time()
         ep = None
         while time.time() - t0 < timeout:
@@ -200,7 +200,7 @@ class Orchestrator:
             log.exception("wandb init failed; continuing")
 
     async def weight_sync(self):
-        """Orchestrator-driven (V22): /save -> parallel pause rollout -> update_weights -> continue."""
+        """Orchestrator-driven: /save -> parallel pause rollout -> update_weights -> continue."""
         t0 = time.time()
         wi = await self.trainer.save()
         path, wv = wi["path"], int(wi["weight_version"])
@@ -234,7 +234,7 @@ class Orchestrator:
                 # Only pull once a **full batch** has accumulated (don't take a step with 1 traj in the buffer
                 # -- noisy gradients and wasted weight syncs). The watchdog watches "is the producer making
                 # progress" rather than "is the buffer empty": slow but producing -> wait patiently (long-CoT
-                # rollouts are inherently slow, the user wants the trainer to wait longer); only treat it as
+                # rollouts are inherently slow, so the trainer should wait longer); only treat it as
                 # stuck if no new traj arrives for longer than starve_timeout.
                 while (len(self.buffer) < want_batch
                        and not sched_task.done() and not stop.is_set()):
@@ -283,7 +283,7 @@ class Orchestrator:
                     await self.weight_sync()
                 # durable checkpoint (DCP model+optim+sched, never overwritten; under rollout-bound the trainer
                 # being blocked here doesn't hurt throughput -- the scheduler keeps producing in the background
-                # and the buffer absorbs it, see DECISIONS).
+                # and the buffer absorbs it).
                 ck = cfg.trainer.checkpoint_every
                 if ck and self.trainer_step % ck == 0:
                     _t = time.time()
@@ -343,7 +343,7 @@ class Orchestrator:
         if "learn_reverse_kl" in m:
             msg += (f" | rKL={m['learn_reverse_kl']:.4f} fKL={m.get('learn_forward_kl'):.4f} "
                     f"ent={m.get('learn_entropy'):.3f}")
-            if "learn_eos_student_prob" in m:   # V34 length self-amplification leading indicator
+            if "learn_eos_student_prob" in m:   # routed-OPD: length self-amplification leading indicator
                 msg += (f" eosP={m['learn_eos_student_prob']:.3f} "
                         f"eosNLL={m.get('learn_eos_teacher_nll'):.2f} tgap={m.get('learn_tail_entropy_gap'):+.2f}")
         if "g4_top1" in m:

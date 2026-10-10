@@ -1,8 +1,8 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""trainer-as-service — rank-0 HTTP ingress + command-loop across all ranks (V15/V17).
+"""trainer-as-service — rank-0 HTTP ingress + command-loop across all ranks.
 
 HTTP is a single-endpoint request/response, but the HSDP trainer is N ranks that must run collectives in
-lockstep. The solution (PLAN §6): **rank-0 is the HTTP ingress + all ranks run a command-loop** — each HTTP
+lockstep. The solution: **rank-0 is the HTTP ingress + all ranks run a command-loop** — each HTTP
 call is translated into "rank-0 broadcasts a command to all ranks, everyone runs the same collective
 together". A fixed command set (train_step/save/stop), not arbitrary RPC.
 
@@ -120,7 +120,7 @@ def _start_http(cfg: OPDConfig, inbox: queue.Queue, get_step) -> _Server:
     port = cfg.trainer.http_port
     srv = _Server((host, port), _Handler, inbox, get_step)
     threading.Thread(target=srv.serve_forever, name="trainer-http", daemon=True).start()
-    # endpoint self-registration (V20): write hostname:port to shared FS for the orchestrator to discover
+    # endpoint self-registration: write hostname:port to shared FS for the orchestrator to discover
     node = socket.gethostname()
     ep = {"host": node, "port": port, "url": f"http://{node}:{port}"}
     os.makedirs(cfg.run_dir, exist_ok=True)

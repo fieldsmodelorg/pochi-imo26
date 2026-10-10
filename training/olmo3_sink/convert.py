@@ -15,8 +15,8 @@ With a strongly negative init the model is numerically ~identical to the base
 Olmo3 at step 0, and SFT learns the sinks in.
 
 With `--sinks-npz` the sinks are instead BAKED from a measured per-head warm
-start (`_attn_sink_init.py` output; see docs/attn_sink_study.md §9 — scalar
-inits 0.0/-10 are dead starts for SFT-time sink injection). `--src` may be a
+start (a per-head [L,H] npz, e.g. from `sink_calib.s_init_from`; scalar inits
+0.0/-10 are dead starts for SFT-time sink injection). `--src` may be a
 tokenizer-transplant output dir, yielding a single ready-to-train
 "deepseek-tokenizer + s_aux" artifact:
 
@@ -56,9 +56,9 @@ def convert(src: str, dst: str, sink_init_value: float, dtype: str,
 
     provenance = None
     if sinks_npz is not None:
-        # Bake measured per-head warm-start sinks (from _attn_sink_init.py) into the
-        # checkpoint, so the artifact ships ready to train (docs/attn_sink_study.md §9:
-        # scalar init 0.0/-10 are dead starts for SFT-time sink injection).
+        # Bake per-head warm-start sinks [L,H] (e.g. from sink_calib.s_init_from) into the
+        # checkpoint, so the artifact ships ready to train (scalar inits 0.0/-10 are dead
+        # starts for SFT-time sink injection).
         import hashlib
         import json
 

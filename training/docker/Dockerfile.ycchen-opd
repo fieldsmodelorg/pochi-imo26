@@ -10,7 +10,7 @@
 #   * trainer sink  -> `olmo3_sink_fa2` (post-correction on STOCK flash-attn-2), NOT patched-FA3.
 #   * rollout sink  -> sglang `--attention-backend triton` (honors the sink in prefill AND decode;
 #                      flashinfer drops it), NOT the H200 FA3 default.
-# See docs/OPD_V2_PARITY_STATUS.md for the full cu13<->0.5.14 parity matrix.
+# See docs/OPD_V2_CU128_PARITY.md for the full cu13<->0.5.14 parity matrix.
 #
 # TWO isolated venvs (train torch must not touch sglang's pinned torch/flashinfer/sgl_kernel):
 #   base `/app/.venv`  -> trainer + orchestrator  (torch 2.10+cu128, transformers 5.9.0, olmo3_sink_fa2, liger)

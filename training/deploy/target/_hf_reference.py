@@ -1,6 +1,6 @@
 """HF reference logprobs for the SGLang sink-deployment parity test.
 
-Loads the ORIGINAL stage1-2node checkpoint (model_type=olmo3_sink) through the
+Loads an olmo3_sink checkpoint (PP_REF_MODEL) through the
 olmo3_sink package with the sink-aware eager backend (fp32 reference attention),
 teacher-forces fixed DeepSeek-format token sequences, and saves per-position
 next-token logprobs as the parity baseline for the SGLang server.
@@ -9,8 +9,8 @@ next-token logprobs as the parity baseline for the SGLang server.
 pass (engagement test: proves the serving kernel actually applies sinks).
 
 Usage:
-  CUDA_VISIBLE_DEVICES=7 uv run python training/stage1/sglang_deploy/_hf_reference.py
-  CUDA_VISIBLE_DEVICES=7 uv run python training/stage1/sglang_deploy/_hf_reference.py --amplify 5.0
+  CUDA_VISIBLE_DEVICES=7 uv run python training/deploy/target/_hf_reference.py
+  CUDA_VISIBLE_DEVICES=7 uv run python training/deploy/target/_hf_reference.py --amplify 5.0
 """
 
 import argparse
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import torch
 
-ROOT = Path(__file__).resolve().parents[2]  # proof-pilot/ (file lives in deploy/target/)
+ROOT = Path(__file__).resolve().parents[2]  # training/ (file lives in training/deploy/target/)
 sys.path.insert(0, str(ROOT / "training" / "stage1" / "src"))
 sys.path.insert(0, str(ROOT / "olmo3_sink"))
 

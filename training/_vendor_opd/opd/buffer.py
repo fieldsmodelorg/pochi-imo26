@@ -1,5 +1,5 @@
 # Copyright 2026 proof-pilot. Apache-2.0.
-"""Async trajectory buffer with weight_version tagging + max_staleness dropping (PLAN §2/§4 D4).
+"""Async trajectory buffer with weight_version tagging + max_staleness dropping.
 
 OPD is near-on-policy: rollouts are drawn from a weight version a few steps behind the trainer.
 There is no importance-ratio correction (full-vocab GKD, direct divergence), so "on-policy enough"
@@ -22,7 +22,7 @@ from typing import Optional
 class Trajectory:
     """One student rollout + (after scoring) its corresponding quant teacher hidden.
 
-    token_ids is the **full sequence** (prompt + generated), token-in-token-out throughout (D12).
+    token_ids is the **full sequence** (prompt + generated), token-in-token-out throughout.
     teacher_* are filled in after the teacher service scores it (packed/scales, rotated had+int6 space).
     """
     token_ids: list[int]                 # prompt + generated (full)
