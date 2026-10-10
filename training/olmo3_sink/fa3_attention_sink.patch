@@ -1,0 +1,152 @@
+diff --git a/hopper/flash.h b/hopper/flash.h
+index 6848e8c..064d58c 100644
+--- a/hopper/flash.h
++++ b/hopper/flash.h
+@@ -50,6 +50,9 @@ struct Flash_fwd_params : public Qkv_params {
+     void * __restrict__ softmax_lse_ptr;
+     void * __restrict__ softmax_lseaccum_ptr;
+ 
++    // proof-pilot: per-head attention sink logits [num_heads], nullptr if unused
++    float * __restrict__ sink_ptr;
++
+     // For FP8 scaling
+     float * __restrict__ q_descale_ptr;
+     float * __restrict__ k_descale_ptr;
+diff --git a/hopper/flash_api.cpp b/hopper/flash_api.cpp
+index 43f3387..171c8fa 100644
+--- a/hopper/flash_api.cpp
++++ b/hopper/flash_api.cpp
+@@ -704,7 +704,8 @@ mha_fwd(at::Tensor q,   // (b, s_q, h, d) or (total_q, h, d) if there is cu_seql
+         std::optional<at::Tensor> scheduler_metadata_,  // (b + 1)
+         int64_t num_splits,
+         std::optional<bool> pack_gqa_,
+-        int64_t sm_margin
++        int64_t sm_margin,
++        std::optional<at::Tensor> sink_  // proof-pilot: per-head attention sink [num_heads]
+         ) {
+ 
+     auto dprops = at::cuda::getCurrentDeviceProperties();
+@@ -1145,6 +1146,18 @@ mha_fwd(at::Tensor q,   // (b, s_q, h, d) or (total_q, h, d) if there is cu_seql
+         }
+     }
+ 
++    // proof-pilot: per-head attention sink logits [num_heads], applied in the softmax denominator
++    if (sink_.has_value()) {
++        auto sink = sink_.value();
++        CHECK_DEVICE(sink);
++        CHECK_SHAPE(sink, num_heads);
++        TORCH_CHECK(sink.dtype() == at::ScalarType::Float, "sink must be float32");
++        TORCH_CHECK(sink.stride(-1) == 1, "sink must be contiguous");
++        params.sink_ptr = sink.data_ptr<float>();
++    } else {
++        params.sink_ptr = nullptr;
++    }
++
+     #ifdef FLASHATTENTION_DISABLE_LOCAL
+     TORCH_CHECK(!params.is_local, "This flash attention build does not support local attention.");
+     #endif
+@@ -1705,7 +1718,8 @@ TORCH_LIBRARY(flash_attn_3, m) {
+         "Tensor? scheduler_metadata = None,"
+         "int num_splits = 0,"
+         "bool? pack_gqa = None,"
+-        "int sm_margin = 0) -> (Tensor(out!), Tensor, Tensor, Tensor)");
++        "int sm_margin = 0,"
++        "Tensor? sink = None) -> (Tensor(out!), Tensor, Tensor, Tensor)");
+     m.def("bwd("
+         "Tensor dout,"
+         "Tensor q,"
+diff --git a/hopper/flash_fwd_launch_template.h b/hopper/flash_fwd_launch_template.h
+index 43567a5..d17e96c 100644
+--- a/hopper/flash_fwd_launch_template.h
++++ b/hopper/flash_fwd_launch_template.h
+@@ -129,7 +129,8 @@ void run_flash_fwd(Flash_fwd_params &params, cudaStream_t stream) {
+         params.kv_batch_idx,
+         params.cu_seqlens_q, params.cu_seqlens_k, params.cu_seqlens_knew,
+         params.seqused_q, params.seqused_k,
+-        params.leftpad_k, params.seqlens_rotary
++        params.leftpad_k, params.seqlens_rotary,
++        params.sink_ptr  // proof-pilot
+     };
+     typename CollectiveEpilogue::Arguments epilogue_args {
+         static_cast<ElementOut*>(params.o_ptr),
+diff --git a/hopper/mainloop_fwd_sm90_tma_gmma_ws.hpp b/hopper/mainloop_fwd_sm90_tma_gmma_ws.hpp
+index 536ff85..f040d14 100644
+--- a/hopper/mainloop_fwd_sm90_tma_gmma_ws.hpp
++++ b/hopper/mainloop_fwd_sm90_tma_gmma_ws.hpp
+@@ -396,6 +396,7 @@ struct CollectiveMainloopFwdSm90 {
+         int const* const seqused_k = nullptr;
+         int const* const leftpad_k = nullptr;
+         int const* const seqlens_rotary = nullptr;
++        float const* ptr_sink = nullptr;  // proof-pilot: per-head attention sink [num_heads]
+     };
+ 
+     // Device side kernel params
+@@ -453,6 +454,7 @@ struct CollectiveMainloopFwdSm90 {
+         int const* const seqused_k = nullptr;
+         int const* const leftpad_k = nullptr;
+         int const *const seqlens_rotary = nullptr;
++        float const* ptr_sink = nullptr;  // proof-pilot: per-head attention sink [num_heads]
+     };
+ 
+     static Params
+@@ -564,7 +566,8 @@ struct CollectiveMainloopFwdSm90 {
+                 !Split ? 1 : args.num_splits,
+                 args.kv_batch_idx,
+                 args.cu_seqlens_q, args.cu_seqlens_k, args.cu_seqlens_k_new,
+-                args.seqused_q, args.seqused_k, args.leftpad_k, args.seqlens_rotary};
++                args.seqused_q, args.seqused_k, args.leftpad_k, args.seqlens_rotary,
++                args.ptr_sink};
+     }
+ 
+     /// Issue Tma Descriptor Prefetch -- ideally from a single thread for best performance
+@@ -974,6 +977,7 @@ struct CollectiveMainloopFwdSm90 {
+         int const bidb = get<2>(block_coord);
+         int const split_idx = get<3>(block_coord);
+         int const bidh_kv = !PackGQA ? params.qhead_per_khead_divmod.divide(bidh) : bidh;
++        float const sink_val = params.ptr_sink == nullptr ? -INFINITY : params.ptr_sink[bidh];  // proof-pilot
+         auto [n_block_min, n_block_max] = BlockMN_t::get_n_block_min_max(
+             seqlen_info, m_block, bidb, split_idx, params.num_splits,
+             params.window_size_left, params.window_size_right, params.attention_chunk_divmod,
+@@ -1239,7 +1243,7 @@ struct CollectiveMainloopFwdSm90 {
+             if constexpr (!HasQv) { consumer_wait(pipeline_v, smem_pipe_read); }
+             flash::gemm</*zero_init=*/false, /*wg_wait=*/-1>(tiled_mma_pv, cute::conditional_return<MmaPV_is_RS>(tOrP, tOsP), tOrV(_, _, _, smem_pipe_read.index()), tOrO);
+             float const v_descale = !Is_FP8 || params.ptr_v_descale == nullptr ? 1.0f : params.ptr_v_descale[bidb * get<0>(params.stride_v_descale) + bidh_kv * get<1>(params.stride_v_descale)];
+-            cute::copy(softmax.finalize(v_descale), scores_scale);
++            cute::copy(softmax.finalize(v_descale, sink_val), scores_scale);
+             if constexpr (LargeHeadDimV) {
+                 cutlass::arch::NamedBarrier::sync(NumMmaThreads, static_cast<uint32_t>(FwdNamedBarriers::PEmpty) /*id*/);
+                 store_scales(scores_scale, smem_pipe_read.index());
+@@ -1337,7 +1341,7 @@ struct CollectiveMainloopFwdSm90 {
+             // Tell producers that smem_q is ready
+             cutlass::arch::NamedBarrier::arrive(NumMmaThreadsQK + (Use_TMA_Q ? cutlass::NumThreadsPerWarp : NumProducerThreads), static_cast<uint32_t>(FwdNamedBarriers::QueryEmpty) /*id*/);
+             float const v_descale = !Is_FP8 || params.ptr_v_descale == nullptr ? 1.0f : params.ptr_v_descale[bidb * get<0>(params.stride_v_descale) + bidh_kv * get<1>(params.stride_v_descale)];
+-            Tensor scores_scale = softmax.finalize(v_descale);
++            Tensor scores_scale = softmax.finalize(v_descale, sink_val);
+             if constexpr (LargeHeadDimV) {
+                 cutlass::arch::NamedBarrier::sync(NumMmaThreads, static_cast<uint32_t>(FwdNamedBarriers::PEmpty) /*id*/);
+                 store_scales(scores_scale, smem_pipe_read.index());
+diff --git a/hopper/softmax.h b/hopper/softmax.h
+index 8fcdb6b..03f6cae 100644
+--- a/hopper/softmax.h
++++ b/hopper/softmax.h
+@@ -134,13 +134,19 @@ struct Softmax {
+         flash::reduce_sum</*zero_init=*/Is_first, /*warp_reduce=*/false>(scores, row_sum);
+     };
+ 
+-    __forceinline__ __device__ TensorT finalize(float const final_scale=1.f) {
++    __forceinline__ __device__ TensorT finalize(float const final_scale=1.f, float const sink=-INFINITY) {
+         SumOp<float> sum_op;
+         quad_allreduce_(row_sum, row_sum, sum_op);
+         TensorT scores_scale;
+         #pragma unroll
+         for (int mi = 0; mi < size(row_sum); ++mi) {
+             float sum = row_sum(mi);
++            // proof-pilot attention sink: extra softmax-denominator term exp(sink - M),
++            // M = row_max*softmax_scale. Makes o=acc/sum and lse=M+log(sum) sink-corrected.
++            if (sink != -INFINITY && row_max(mi) != -INFINITY) {
++                float const m_natural = row_max(mi) * (softmax_scale_log2 * float(M_LN2));
++                sum += __expf(sink - m_natural) * float(1 << Max_offset);
++            }
+             float inv_sum = (sum == 0.f || sum != sum) ? 0.f : 1.f / sum;
+             scores_scale(mi) = inv_sum * final_scale;
+             // For FP8, we might have scaled the output of exp by 2**8 so we need to divide sum by that amount.

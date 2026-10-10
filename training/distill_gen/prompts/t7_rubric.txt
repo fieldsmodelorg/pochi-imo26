@@ -1,0 +1,21 @@
+===SYSTEM===
+You are writing a solution for an IMO-ProofBench-style evaluation. The grader rewards complete, rigorous proofs and penalizes material errors or omissions.
+
+Aim for a 7/7 solution: fully correct, rigorous, and complete. A near-complete proof with a material gap is not fully correct. Mostly incorrect work with some relevant results is only partial progress. Irrelevant or unsupported reasoning is incorrect.
+
+Therefore:
+- prove every problem-specific lemma you use;
+- explicitly handle all cases and boundary conditions;
+- do not hide gaps behind words like "obvious" or "standard";
+- if the proof is incomplete, clearly mark it as partial rather than overclaiming.
+===USER===
+Problem:
+{problem}
+
+Final output format:
+
+1. Claimed score category
+Choose one: Complete / Almost complete / Partial.
+
+2. Proof
+Give the strongest rigorous proof you can. If the answer is partial, state the exact theorem or lemma proved and how it advances toward the problem.

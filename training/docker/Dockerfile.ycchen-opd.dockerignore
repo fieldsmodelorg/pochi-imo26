@@ -1,0 +1,18 @@
+# Build context = repo root (docker build -f training/docker/Dockerfile.ycchen-opd .).
+# BuildKit uses this file instead of the root .dockerignore (which serves the inference image).
+# Whitelist: only the training tree + the shared math_3r prompt templates enter the image.
+*
+!training
+!evaluation/prompts/ycchen_math_3r
+
+# never ship VCS metadata, caches, local venvs, or run/output artifacts
+**/.git
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.venv
+**/venv
+**/runs
+**/wandb
+**/outputs
+**/*.log

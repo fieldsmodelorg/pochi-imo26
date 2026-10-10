@@ -1,0 +1,19 @@
+# Olmo-3-1125-32B base, DeepSeek-V4-Flash tokenizer (vocab 100,278 -> 129,280).
+# donor_tokenizer points at the local DeepSeek dir (has tokenizer.json) to avoid a HF download.
+# base hidden 5120 vs donor hidden 4096 differ — fine: OMP solves coefficients in
+# donor space, reconstruction runs in base space, so the dims need not match.
+base:            /models/Olmo-3-1125-32B
+donor_weights:   /models/DeepSeek-V4-Flash   # only embed/head shards read
+donor_tokenizer: /models/DeepSeek-V4-Flash
+out:             /models/Olmo-3-1125-32B-deepseekTok
+
+k: 64
+centered: true        # essential for lm_head logit calibration
+cosine_select: true   # cosine atom selection (false = raw canonical OMP)
+ridge: 1.0e-3
+
+tensors:
+  base_embed:  model.embed_tokens.weight
+  base_head:   lm_head.weight
+  donor_embed: embed.weight
+  donor_head:  head.weight

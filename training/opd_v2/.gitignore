@@ -1,0 +1,8 @@
+# run artifacts (not source)
+runs/
+wandb/
+__pycache__/
+*.pyc
+*.egg-info/
+# generated teacher patch (regenerate from teacher_extract/_patch_sglang.py; see README)
+teacher_patch/http_server.py
