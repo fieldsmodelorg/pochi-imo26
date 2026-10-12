@@ -7,6 +7,9 @@ configuration uses eight H200 GPUs as four TP2 replicas, BF16 target and draft
 weights, DFlash speculative decoding, and FlashAttention 3. Inference has
 been tested on H200 and B200 (use appropriate config files).
 
+Training code and recipes are in [`training/`](training/README.md), including
+[exporting a trained DFlash draft for serving](training/dflash/README.md#export-for-serving).
+
 > ### 📦 Prebuilt image
 > **`ghcr.io/fieldsmodelorg/aimo-proof-pilot:sha-463682b`** &nbsp;·&nbsp; built from `main` [`463682b`](https://github.com/fieldsmodelorg/AIMO-Proof-Pilot/commit/463682bbf4137dac6366246ee7aefa1b0d0a4a68) &nbsp;·&nbsp; [package on GHCR](https://github.com/fieldsmodelorg/AIMO-Proof-Pilot/pkgs/container/aimo-proof-pilot)
 > ```bash

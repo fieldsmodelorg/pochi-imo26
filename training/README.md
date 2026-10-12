@@ -15,7 +15,7 @@ Yi-Chia Chen's proof-pilot training pipeline, plus the CUDA 12.8 image and launc
 | [`opd_v2/`](opd_v2/) | **on-policy distillation** — the stage that produces the delivered model ([algorithm](docs/OPD_V2_ALGORITHM.md), [config](docs/OPD_V2_CONFIG_REFERENCE.md)) |
 | [`distill_gen/`](distill_gen/) | OPD prompt sources: `math_3r` role modules, prover templates, `problems/` |
 | [`_common/`](_common/), [`_vendor_opd/`](_vendor_opd/) | JSD kernel + hidden codec; vendored v1 OPD leaf modules |
-| [`deploy/`](deploy/) | `make_olmo3sink_deploy.py` (training → deploy format), `prepare_yarn_deploy.py` (YaRN-256k config), `target/olmo2_sink.py` (reference sglang sink model + parity test) |
+| [`deploy/`](deploy/) | Target conversion (`make_olmo3sink_deploy.py`), [DFlash checkpoint export](dflash/README.md#export-for-serving) (`convert_draft.py`), YaRN config, and target parity tools |
 | [`dflash/`](dflash/) | DFlash speculative-decoding draft training (deploy-time; not part of the student's training) |
 | [`docker/`](docker/) | cu128 image for H200 + B200 (+ its base image in `base/`) and the OPD launchers ([image](docker/README.md), [launch guide](docker/launch/README.md)) |
 | [`docs/`](docs/) | OPD v2 algorithm, config reference (her best-run values), cu13 ↔ cu128 parity matrix |

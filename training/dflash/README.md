@@ -9,7 +9,7 @@ block. The trained draft is served by the inference stack's DFlash patches (`sgl
 ## Layout
 | file | purpose |
 |------|---------|
-| `canonical_fa3_train_prod.py` | **production trainer for the delivered drafts** (canonical block convention: block-0 = the verified token's target embedding, predicts `block_size-1` tokens; weights are drop-in for the stock sglang DFlash worker); checkpoint/resume + `--init-from` warm start |
+| `canonical_fa3_train_prod.py` | **production trainer for the delivered drafts** (block-0 = the verified token's target embedding, predicts `block_size-1` tokens); checkpoint/resume + `--init-from` warm start; export checkpoints as described below |
 | `experiments/canonical_fa3_train.py` | canonical draft model + loss/metrics core, imported by `canonical_fa3_train_prod.py` |
 | `nodup_fa3_train_prod.py` | no-dup-convention production trainer (earlier convention) |
 | `nodup_fa3_train.py` | no-dup model + loss/metrics core, imported by both prod trainers |
@@ -21,6 +21,7 @@ block. The trained draft is served by the inference stack's DFlash patches (`sgl
 | `configs/` | draft configs (7B/32B × SWA window 128/512) |
 | `examples/` | 32B two-phase curriculum sbatch scripts (phase S / phase L) |
 | `tests/` | unit tests (attention, sampler resume, target, misc) |
+| [`../deploy/convert_draft.py`](../deploy/convert_draft.py) | canonical training checkpoint (`final.pt` / `latest.pt`) → serving directory |
 
 ## Usage — 32B canonical draft (two-phase curriculum)
 
@@ -79,6 +80,34 @@ python training/stage1_v2/build_l4.py \
 (`--max-len 4096` caps each document, `--micro-len 8192` packs them into 8k bins;
 ~3M bins from the G2 mix.) Phase L data comes from `build_l4_pretokenized.py` over OPD
 rollout dumps (finish_reason=length filtered) + teacher-proof manifests at micro-len 65536.
+
+## Export for serving
+
+After canonical phase-L training, run from the repo root in an environment with
+`torch` and `safetensors` (the training environment has both):
+
+```bash
+python training/deploy/convert_draft.py \
+    --checkpoint outputs/dflash-canonical-32b-phaseL/final.pt \
+    --out outputs/dflash-32b-phaseL-serving
+```
+
+`--checkpoint` also accepts `latest.pt`. The converter writes `config.json` and
+one `model.safetensors`, using the saved model weights and checkpoint metadata.
+Optimizer, FP32 master weights, and scheduler state stay in the training checkpoint.
+The draft shares the target's embedding and LM head; no separate tokenizer is needed.
+
+For the documented 32B phase-L recipe, the exported config records block size 11
+(one anchor + ten proposals), SWA window 512, and the checkpoint's target-layer IDs.
+This metadata is separate from the runtime proposal budget in the serving YAML.
+
+For SGLang, set `models.bf16_draft` in your serving YAML to the absolute exported
+directory path visible inside the inference container. Use the existing
+[`scheduler.sh`](../../scheduler.sh) or container entrypoint, which applies the
+required [`sglang_patches/`](../../sglang_patches/). The vLLM route is documented in
+[`vllm_patches/README.md`](../../vllm_patches/README.md#olmo3sink-dflash).
+
+Converter source: [`proof-pilot-codes` at `bc03a2c`](https://github.com/ycchen-tw/proof-pilot-codes/blob/bc03a2c71a076990deaad3d712c6889682e12c69/deploy/dflash/convert_draft.py).
 
 ## Notes
 - Resource paths come from env vars (`TARGET_MODEL_PATH`, `DFLASH_TRAIN_DATA`,
