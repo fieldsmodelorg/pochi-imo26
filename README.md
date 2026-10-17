@@ -1,5 +1,10 @@
 # IMO26 eval of FM-Pochi-32B models
 
+<div align="center" style="line-height: 1;">
+  <a href="https://huggingface.co/fieldsmodelorg"><img alt="Hugging Face"
+    src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Fields%20Model-ffc107?color=ffc107&logoColor=white"/></a>
+</div>
+
 This repository packages the generate-verify-refine proof harness as a Docker
 image. The submission path reads `test.csv`, runs the selected harness, and
 writes `submission.csv` without calling an external grader. The checked-in
